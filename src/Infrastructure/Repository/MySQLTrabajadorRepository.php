@@ -8,7 +8,7 @@ use PDO;
 
 class MySQLTrabajadorRepository extends MySQLAbstractRepository implements TrabajadorRepositoryInterface
 {
-    protected $table = 'empleados';
+    protected $table = 'trabajador';
     protected $entityClass = Trabajador::class;
 
     protected function save($entity)

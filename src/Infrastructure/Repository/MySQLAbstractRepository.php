@@ -1,6 +1,6 @@
 <?php
 // src/Domain/Repository/MySQLAbstractRepository.php
-namespace App\Domain\Repository;
+namespace App\Infrastructure\Repository;
 use App\Domain\Repository\RepositoryInterface;
 use PDO;
 

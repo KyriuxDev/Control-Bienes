@@ -1,6 +1,6 @@
 <?php
 // src/Domain/Repository/MySQLResguardoRepository.php
-namespace App\Domain\Repository;
+namespace App\Infrastructure\Repository;
 
 use App\Domain\Entity\Resguardo;
 use PDO;

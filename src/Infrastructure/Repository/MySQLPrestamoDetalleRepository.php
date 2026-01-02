@@ -1,6 +1,6 @@
 <?php
 // src/Domain/Repository/MySQLPrestamoDetalleRepository.php
-namespace App\Domain\Repository;
+namespace App\Infrastructure\Repository;
 
 use App\Domain\Entity\PrestamoDetalle;
 use PDO;

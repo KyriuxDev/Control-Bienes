@@ -1,6 +1,6 @@
 <?php
 // src/Domain/Repository/MySQLBienRepository.php
-namespace App\Domain\Repository;
+namespace App\Infrastructure\Repository;
 
 use App\Domain\Entity\Bien;
 use PDO;

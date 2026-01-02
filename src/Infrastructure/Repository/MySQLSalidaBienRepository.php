@@ -1,6 +1,6 @@
 <?php
 // src/Domain/Repository/MySQLSalidaBienRepository.php
-namespace App\Domain\Repository;
+namespace App\Infrastructure\Repository;
 
 use App\Domain\Entity\SalidaBien;
 use PDO;
