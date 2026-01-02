@@ -5,7 +5,7 @@ namespace App\Domain\Entity;
 class Resguardo extends AbstractEntity
 {
     protected $folio;
-    protected $empleado_id;
+    protected $trabajador_id;
     protected $bien_id;
     protected $fecha_asignacion;
     protected $fecha_devolucion;
@@ -23,12 +23,12 @@ class Resguardo extends AbstractEntity
         return $this;
     }
 
-    public function getEmpleadoId() {
-        return $this->empleado_id;
+    public function getTrabajadorId() {
+        return $this->trabajador_id;
     }
 
-    public function setEmpleadoId($empleado_id) {
-        $this->empleado_id = $empleado_id;
+    public function setTrabajadorId($trabajador_id) {
+        $this->trabajador_id = $trabajador_id;
         return $this;
     }
 

@@ -5,7 +5,7 @@ namespace App\Domain\Entity;
 class SalidaBien extends AbstractEntity
 {
     protected $folio;
-    protected $empleado_id;
+    protected $trabajador_id;
     protected $area_origen;
     protected $destino;
     protected $fecha_salida;
@@ -25,12 +25,12 @@ class SalidaBien extends AbstractEntity
         return $this;
     }
 
-    public function getEmpleadoId() {
-        return $this->empleado_id;
+    public function getTrabajadorId() {
+        return $this->trabajador_id;
     }
 
-    public function setEmpleadoId($empleado_id) {
-        $this->empleado_id = $empleado_id;
+    public function setTrabajadorId($trabajador_id) {
+        $this->trabajador_id = $trabajador_id;
         return $this;
     }
 
