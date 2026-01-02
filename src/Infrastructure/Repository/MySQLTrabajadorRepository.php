@@ -1,14 +1,15 @@
 <?php
-// src/Domain/Repository/MySQLTrabajadorRepository.php
-namespace App\Domain\Repository;
+// src/Infrastructure/Repository/MySQLTrabajadorRepository.php
+namespace App\Infrastructure\Repository;
 
-use App\Domain\Entity\;
+use App\Domain\Repository\TrabajadorRepositoryInterface;
+use App\Domain\Entity\Trabajador;
 use PDO;
 
-class MySQLTrabajadorRepository extends AbstractRepository implements TrabajadorRepositoryInterface
+class MySQLTrabajadorRepository extends MySQLAbstractRepository implements TrabajadorRepositoryInterface
 {
-    protected $table = 'trabajador';
-    protected $entityClass = trabajador::class;
+    protected $table = 'empleados';
+    protected $entityClass = Trabajador::class;
 
     protected function save($entity)
     {

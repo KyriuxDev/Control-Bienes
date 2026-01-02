@@ -1,7 +1,7 @@
 <?php
 // src/Domain/Repository/MySQLAbstractRepository.php
 namespace App\Domain\Repository;
-
+use App\Domain\Repository\RepositoryInterface;
 use PDO;
 
 abstract class MySQLAbstractRepository implements RepositoryInterface
