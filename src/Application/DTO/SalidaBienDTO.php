@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domain\Entity;
+namespace App\Application\DTO;
 
 class SalidaBienDTO
 {
@@ -45,9 +45,8 @@ class SalidaBienDTO
             'fecha_devolucion_programada' => $this->fecha_devolucion_programada,
             'sujeto_devolucion' => $this->sujeto_devolucion,
             'lugar' => $this->lugar,
-            'observaciones_estado' => $this->observaciones_estado
-            'estado' => $this->estado,
-
+            'observaciones_estado' => $this->observaciones_estado,
+            'estado' => $this->estado
         );
     }
 }

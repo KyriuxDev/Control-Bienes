@@ -2,6 +2,7 @@
 // src/Domain/Repository/MySQLPrestamoRepository.php
 namespace App\Infrastructure\Repository;
 
+use App\Domain\Repository\PrestamoRepositoryInterface;
 use App\Domain\Entity\Prestamo;
 use PDO;
 

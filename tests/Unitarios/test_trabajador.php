@@ -1,6 +1,6 @@
 <?php
 // test_trabajador.php
-require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 use App\Infrastructure\Config\Database;
 use App\Infrastructure\Repository\MySQLTrabajadorRepository;

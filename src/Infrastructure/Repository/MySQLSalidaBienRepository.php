@@ -2,6 +2,7 @@
 // src/Domain/Repository/MySQLSalidaBienRepository.php
 namespace App\Infrastructure\Repository;
 
+use App\Domain\Repository\SalidaBienRepositoryInterface;
 use App\Domain\Entity\SalidaBien;
 use PDO;
 

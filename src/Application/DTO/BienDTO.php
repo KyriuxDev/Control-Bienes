@@ -18,7 +18,7 @@ class BienDTO
     {
         $this->id = isset($data['id']) ? $data['id'] : null;
         $this->identificacion = isset($data['identificacion']) ? $data['identificacion'] : null;
-        $this->descripcion = isset($data['descripcion']) ? $data['descripcioon'] : null;
+        $this->descripcion = isset($data['descripcion']) ? $data['descripcion'] : null;
         $this->marca = isset($data['marca']) ? $data['marca'] : null;
         $this->modelo = isset($data['modelo']) ? $data['modelo'] : null;
         $this->serie = isset($data['serie']) ? $data['serie'] : null;

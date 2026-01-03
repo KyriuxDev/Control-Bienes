@@ -2,6 +2,7 @@
 // src/Domain/Repository/MySQLSalidaDetalleRepository.php
 namespace App\Infrastructure\Repository;
 
+use App\Domain\Repository\SalidaDetalleRepositoryInterface;
 use App\Domain\Entity\SalidaDetalle;
 use PDO;
 

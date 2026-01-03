@@ -30,6 +30,8 @@ class PrestamoDTO
         $this->matricula_recibe = isset($data['matricula_recibe']) ? $data['matricula_recibe'] : null;
         $this->telefono = isset($data['telefono']) ? $data['telefono'] : null;
         $this->fecha_registro = isset($data['fecha_registro']) ? $data['fecha_registro'] : null;
+        $this->estado = isset($data['estado']) ? $data['estado'] : null;
+        $this->observaciones = isset($data['observaciones']) ? $data['observaciones'] : null;
     }
 
     public function toArray()
@@ -45,7 +47,9 @@ class PrestamoDTO
             'matricula_autoriza' => $this->matricula_autoriza,
             'matricula_recibe' => $this->matricula_recibe,
             'telefono' => $this->telefono,
-            'fecha_registro' => $this->fecha_registro
+            'fecha_registro' => $this->fecha_registro,
+            'estado' => $this->estado,
+            'observaciones' => $this->observaciones
         );
     }
 }
