@@ -19,6 +19,7 @@ class ResguardoDTO
         $this->id = isset($data['id']) ? $data['id'] : null;
         $this->folio = isset($data['folio']) ? $data['folio'] : null;
         $this->trabajador_id = isset($data['trabajador_id']) ? $data['trabajador_id'] : null;
+        $this->bien_id = isset($data['bien_id']) ? $data['bien_id'] : null;
         $this->fecha_asignacion = isset($data['fecha_asignacion']) ? $data['fecha_asignacion'] : null;
         $this->fecha_devolucion = isset($data['fecha_devolucion']) ? $data['fecha_devolucion'] : null;
         $this->lugar = isset($data['lugar']) ? $data['lugar'] : null;
@@ -33,6 +34,7 @@ class ResguardoDTO
             'id' => $this->id,
             'folio' => $this->folio,
             'trabajador_id' => $this->trabajador_id,
+            'bien_id' => $this->bien_id,
             'fecha_asignacion' => $this->fecha_asignacion,
             'fecha_devolucion' => $this->fecha_devolucion,
             'lugar' => $this->lugar,
