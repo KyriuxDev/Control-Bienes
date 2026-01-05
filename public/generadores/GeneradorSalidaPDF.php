@@ -12,9 +12,7 @@ class GeneradorSalidaPDF
     public function __construct()
     {
         $posiblesRutas = [
-            __DIR__ . '/../../plantillas/salidaBiene.pdf',
-            __DIR__ . '/../plantillas/salidaBiene.pdf',
-            '/mnt/user-data/uploads/salidaBiene.pdf'
+            __DIR__ . '/../../templates/salidaBiene.pdf',
         ];
         
         foreach ($posiblesRutas as $ruta) {

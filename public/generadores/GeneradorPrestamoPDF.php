@@ -1,10 +1,7 @@
 <?php
 // generadores/GeneradorPrestamoPDF.php
 
-// Cargar autoload
 require_once __DIR__ . '/../../vendor/autoload.php';
-
-// Importar clase FPDI para TCPDF
 use setasign\Fpdi\Tcpdf\Fpdi;
 
 class GeneradorPrestamoPDF
@@ -15,13 +12,9 @@ class GeneradorPrestamoPDF
     public function __construct()
     {
         // Buscar plantilla en varios lugares
-        $posiblesRutas = [
-            __DIR__ . '/../../plantillas/prestamo1.pdf',
-            __DIR__ . '/../plantillas/prestamo1.pdf',
-            '/mnt/user-data/uploads/prestamo1.pdf'
-        ];
+        $posibleRuta = [__DIR__ . '/../../templates/prestamo.pdf'];
         
-        foreach ($posiblesRutas as $ruta) {
+        foreach ($posibleRuta as $ruta) {
             if (file_exists($ruta)) {
                 $this->plantilla = $ruta;
                 break;
@@ -239,9 +232,7 @@ class GeneradorPrestamoPDF
         $valor = isset($datos['matricula_autoriza']) && $datos['matricula_autoriza'] !== ''
             ? $datos['matricula_autoriza']
             : '_______________';
-
         $this->pdf->Cell(50, 5, $valor, 0, 1, 'L');
-
         
         // Columna derecha - RECIBE
         $xDer = 115;
@@ -264,9 +255,7 @@ class GeneradorPrestamoPDF
         $valor = isset($datos['matricula_recibe']) && $datos['matricula_recibe'] !== ''
             ? $datos['matricula_recibe']
             : '_______________';
-
         $this->pdf->Cell(50, 5, $valor, 0, 1, 'L');
-
         
         // Lugar y fecha
         $this->pdf->Ln(5);

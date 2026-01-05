@@ -12,10 +12,7 @@ class GeneradorResguardoPDF
     public function __construct()
     {
         $posiblesRutas = [
-            __DIR__ . '/../../plantillas/resguardo1.pdf',
-            __DIR__ . '/../plantillas/resguardo1.pdf',
-            '/mnt/user-data/uploads/resguardo1.pdf'
-        ];
+            __DIR__ . '/../../templates/resguardo.pdf' ];
         
         foreach ($posiblesRutas as $ruta) {
             if (file_exists($ruta)) {
@@ -96,9 +93,7 @@ class GeneradorResguardoPDF
         $folio = isset($datos['folio']) && $datos['folio'] !== ''
             ? $datos['folio']
             : 'N/A';
-
         $this->pdf->Cell(60, 6, $folio, 0, 0, 'L');
-
         
         $this->pdf->SetFont('helvetica', '', 9);
         $this->pdf->Cell(30, 6, 'Fecha:', 0, 0, 'L');
@@ -106,9 +101,7 @@ class GeneradorResguardoPDF
         $lugarFecha = isset($datos['lugar_fecha']) && $datos['lugar_fecha'] !== ''
             ? $datos['lugar_fecha']
             : date('d/m/Y');
-
         $this->pdf->Cell(0, 6, $lugarFecha, 0, 1, 'L');
-
         
         $this->pdf->Ln(5);
     }
@@ -180,7 +173,8 @@ class GeneradorResguardoPDF
             }
             $this->pdf->Cell(35, 6, $marcaModelo, 1, 0, 'L');
             
-            $serie = $bien->getNumeroSerie() ?: 'S/N';
+            // CORREGIDO: Usar getSerie() en lugar de getNumeroSerie()
+            $serie = $bien->getSerie() ?: 'S/N';
             if (strlen($serie) > 20) {
                 $serie = substr($serie, 0, 17) . '...';
             }
