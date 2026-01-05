@@ -4,17 +4,16 @@
 require_once __DIR__ . '/../../vendor/autoload.php';
 use setasign\Fpdi\Tcpdf\Fpdi;
 
-class GeneradorSalidaPDF
-{
+class GeneradorSalidaPDF {
     private $pdf;
     private $plantilla;
     
-    public function __construct()
-    {
-        $posiblesRutas = [
-            __DIR__ . '/../../templates/salidaBiene.pdf',
-        ];
-        
+    public function __construct() {
+        $posiblesRutas = array(
+            __DIR__ . '/../../templates/salida.pdf',
+            __DIR__ . '/../../templates/Salida.pdf',
+            __DIR__ . '/../../templates/salidaBiene.pdf'
+        );
         foreach ($posiblesRutas as $ruta) {
             if (file_exists($ruta)) {
                 $this->plantilla = $ruta;
@@ -23,269 +22,111 @@ class GeneradorSalidaPDF
         }
     }
     
-    public function generar($trabajador, $bienes, $datosAdicionales, $rutaSalida)
-    {
-        try {
-            $this->pdf = new Fpdi();
-            
-            $this->pdf->SetCreator('Sistema IMSS');
-            $this->pdf->SetAuthor('IMSS Control de Bienes');
-            $this->pdf->SetTitle('Autorización de Salida de Bienes');
-            $this->pdf->SetSubject('Forma CBM-2');
-            
-            $this->pdf->SetMargins(15, 15, 15);
-            $this->pdf->SetAutoPageBreak(true, 20);
-            
-            if ($this->plantilla && file_exists($this->plantilla)) {
-                try {
-                    $pageCount = $this->pdf->setSourceFile($this->plantilla);
-                    $templateId = $this->pdf->importPage(1);
-                    $this->pdf->AddPage();
-                    $this->pdf->useTemplate($templateId, 0, 0);
-                } catch (Exception $e) {
-                    $this->pdf->AddPage();
-                    $this->agregarEncabezado();
-                }
-            } else {
-                $this->pdf->AddPage();
-                $this->agregarEncabezado();
-            }
-            
-            $this->pdf->SetFont('helvetica', '', 10);
-            $this->pdf->SetTextColor(0, 0, 0);
-            
-            $this->llenarDatosGenerales($datosAdicionales);
-            $this->llenarDatosTrabajador($trabajador);
-            $this->llenarBienes($bienes);
-            $this->llenarObservaciones($datosAdicionales);
-            $this->agregarLeyenda();
-            $this->llenarFirmas($datosAdicionales);
-            
-            $this->pdf->Output($rutaSalida, 'F');
-            
-            return true;
-            
-        } catch (Exception $e) {
-            error_log("Error generando PDF de salida: " . $e->getMessage());
-            throw new Exception("Error al generar PDF: " . $e->getMessage());
+    public function generar($trabajador, $bienes, $datosAdicionales, $rutaSalida) {
+        $this->pdf = new Fpdi();
+        $this->pdf->setPrintHeader(false);
+        $this->pdf->setPrintFooter(false);
+        $this->pdf->SetMargins(0, 0, 0); 
+        $this->pdf->SetAutoPageBreak(true, 10);
+        
+        $this->pdf->AddPage();
+        $this->pdf->setSourceFile($this->plantilla);
+        $templateId = $this->pdf->importPage(1);
+        $this->pdf->useTemplate($templateId, 0, 0, null, null, true);
+        
+        $this->llenarDatos($trabajador, $bienes, $datosAdicionales);
+        $this->pdf->Output($rutaSalida, 'F');
+        return true;
+    }
+    
+    private function llenarDatos($trabajador, $bienes, $datosAdicionales) {
+        $this->pdf->SetFont('Helvetica', '', 9);
+
+        // Nombre (Coordenadas PdfFiller)
+        $this->pdf->SetXY(23, 50);
+        $this->pdf->Write(10, mb_strimwidth($trabajador->getNombre(), 0, 65, '...'));
+
+        // Institución y Adscripción
+        $this->pdf->SetXY(129, 52.5);
+        $this->pdf->Write(5, mb_strimwidth($trabajador->getAdscripcion() ?: 'IMSS', 0, 50, '...'));
+        $this->pdf->SetXY(38, 55.5);
+        $this->pdf->Write(10, mb_strimwidth($trabajador->getAdscripcion(), 0, 50, '...'));
+
+        // Matrícula, Identificación y Teléfono
+        $this->pdf->SetXY(170, 57.5);
+        $this->pdf->Write(6, $trabajador->getMatricula());
+        $this->pdf->SetXY(44, 60.5);
+        $this->pdf->Write(11, mb_strimwidth($trabajador->getIdentificacion(), 0, 45, '..'));
+        $this->pdf->SetXY(167, 60.5);
+        $this->pdf->Write(11, $trabajador->getTelefono());
+
+        // Área de salida y Cantidad
+        $this->pdf->SetXY(55, 73);
+        $this->pdf->Write(10, $datosAdicionales['area_origen']);
+        $cantidadTotal = 0;
+        foreach($bienes as $b) { $cantidadTotal += $b['cantidad']; }
+        $this->pdf->SetXY(30, 95);
+        $this->pdf->Write(10, $cantidadTotal);
+
+        // Naturaleza (Primer bien)
+        if (!empty($bienes)) {
+            $naturaleza = $bienes[0]['bien']->getNaturaleza();
+            $this->pdf->SetXY(65, 95);
+            $this->pdf->Write(10, $naturaleza);
+            $this->marcarCasillaNaturaleza($naturaleza);
+        }
+
+        // Propósito y Estado
+        $this->pdf->SetXY(42, 129);
+        $this->pdf->Write(10, $datosAdicionales['destino']);
+        $this->pdf->SetXY(115, 137);
+        $this->pdf->Write(10, $datosAdicionales['observaciones'] ?: 'Bueno');
+
+        // Devolución
+        $this->marcarDevolucion($datosAdicionales['sujeto_devolucion'], $datosAdicionales['fecha_devolucion']);
+
+        // Firmas y Responsables (Coordenadas fillForm1 y Common)
+        $this->pdf->SetXY(199, 181);
+        $this->pdf->Write(10, $datosAdicionales['matricula_autoriza']);
+        $this->pdf->SetXY(120, 191);
+        $this->pdf->Write(10, $trabajador->getNombre());
+
+        // Fecha y Lugar
+        $this->pdf->SetXY(195, 204); 
+        $fecha = $this->formatFecha($datosAdicionales['lugar_fecha']);
+        $this->pdf->Write(8, "Oaxaca de Juárez, Oaxaca a " . $fecha);
+
+        // Descripciones
+        $x = 98; $y = 96;
+        foreach (array_slice($bienes, 0, 5) as $item) {
+            $this->pdf->SetXY($x, $y);
+            $texto = $item['cantidad'] . " " . $item['bien']->getDescripcion();
+            $this->pdf->MultiCell(100, 5, $texto, 0, 'L');
+            $y = $this->pdf->GetY();
         }
     }
-    
-    private function agregarEncabezado()
-    {
-        $this->pdf->SetFont('helvetica', 'B', 16);
-        $this->pdf->SetY(15);
-        $this->pdf->Cell(0, 10, 'INSTITUTO MEXICANO DEL SEGURO SOCIAL', 0, 1, 'C');
-        
-        $this->pdf->SetFont('helvetica', 'B', 14);
-        $this->pdf->Cell(0, 8, 'AUTORIZACIÓN DE SALIDA DE BIENES', 0, 1, 'C');
-        
-        $this->pdf->SetLineWidth(0.5);
-        $this->pdf->Line(15, $this->pdf->GetY() + 2, $this->pdf->getPageWidth() - 15, $this->pdf->GetY() + 2);
-        $this->pdf->Ln(8);
-    }
-    
-    private function llenarDatosGenerales($datos)
-    {
-        $this->pdf->SetFont('helvetica', '', 9);
-        $this->pdf->SetFillColor(240, 240, 240);
-        
-        // Área de origen
-        $areaOrigen = isset($datos['area_origen']) && $datos['area_origen'] !== ''
-            ? $datos['area_origen']
-            : 'N/A';
 
-        $this->pdf->Cell(45, 6, 'Área de Origen:', 1, 0, 'L', true);
-        $this->pdf->Cell(135, 6, $areaOrigen, 1, 1, 'L');
-
-        // Destino
-        $destino = isset($datos['destino']) && $datos['destino'] !== ''
-            ? $datos['destino']
-            : 'N/A';
-
-        $this->pdf->Cell(45, 6, 'Destino:', 1, 0, 'L', true);
-        $this->pdf->Cell(135, 6, $destino, 1, 1, 'L');
-
-        // Motivo
-        $motivo = isset($datos['motivo']) && $datos['motivo'] !== ''
-            ? $datos['motivo']
-            : 'N/A';
-
-        $this->pdf->Cell(45, 6, 'Motivo:', 1, 0, 'L', true);
-        $this->pdf->Cell(135, 6, $motivo, 1, 1, 'L');
-
-        
-        // Sujeto a devolución
-        $this->pdf->Cell(45, 6, 'Sujeto a Devolución:', 1, 0, 'L', true);
-        $sujetoDevolucion = !empty($datos['sujeto_devolucion']) && $datos['sujeto_devolucion'] === 'si' ? 'SÍ' : 'NO';
-        $this->pdf->Cell(50, 6, $sujetoDevolucion, 1, 0, 'C');
-        
-        // Fecha de devolución
-        $this->pdf->Cell(40, 6, 'Fecha Devolución:', 1, 0, 'L', true);
-        $fechaDevolucion = !empty($datos['fecha_devolucion']) ? $datos['fecha_devolucion'] : 'N/A';
-        $this->pdf->Cell(45, 6, $fechaDevolucion, 1, 1, 'C');
-        
-        $this->pdf->Ln(5);
-    }
-    
-    private function llenarDatosTrabajador($trabajador)
-    {
-        $this->pdf->SetFont('helvetica', 'B', 11);
-        $this->pdf->Cell(0, 6, 'RESPONSABLE DE LA SALIDA', 0, 1, 'L');
-        $this->pdf->Ln(2);
-        
-        $this->pdf->SetFont('helvetica', '', 9);
-        $this->pdf->SetFillColor(240, 240, 240);
-        
-        $this->pdf->Cell(40, 6, 'Nombre:', 1, 0, 'L', true);
-        $this->pdf->Cell(140, 6, $trabajador->getNombre(), 1, 1, 'L');
-        
-        $this->pdf->Cell(40, 6, 'Cargo:', 1, 0, 'L', true);
-        $this->pdf->Cell(140, 6, $trabajador->getCargo() ?: 'N/A', 1, 1, 'L');
-        
-        $this->pdf->Cell(40, 6, 'Matrícula:', 1, 0, 'L', true);
-        $this->pdf->Cell(60, 6, $trabajador->getMatricula(), 1, 0, 'L');
-        $this->pdf->Cell(40, 6, 'Teléfono:', 1, 0, 'L', true);
-        $this->pdf->Cell(40, 6, $trabajador->getTelefono() ?: 'N/A', 1, 1, 'L');
-        
-        $this->pdf->Ln(5);
-    }
-    
-    private function llenarBienes($bienes)
-    {
-        $this->pdf->SetFont('helvetica', 'B', 11);
-        $this->pdf->Cell(0, 6, 'RELACIÓN DE BIENES', 0, 1, 'L');
-        $this->pdf->Ln(2);
-        
-        $this->pdf->SetFont('helvetica', 'B', 9);
-        $this->pdf->SetFillColor(200, 200, 200);
-        
-        $this->pdf->Cell(15, 7, 'CANT.', 1, 0, 'C', true);
-        $this->pdf->Cell(20, 7, 'NAT.', 1, 0, 'C', true);
-        $this->pdf->Cell(35, 7, 'IDENTIFICACIÓN', 1, 0, 'C', true);
-        $this->pdf->Cell(80, 7, 'DESCRIPCIÓN', 1, 0, 'C', true);
-        $this->pdf->Cell(30, 7, 'ESTADO', 1, 1, 'C', true);
-        
-        $this->pdf->SetFont('helvetica', '', 8);
-        $this->pdf->SetFillColor(255, 255, 255);
-        
-        foreach ($bienes as $bienData) {
-            $bien = $bienData['bien'];
-            $cantidad = $bienData['cantidad'];
-            
-            if ($this->pdf->GetY() > 230) {
-                $this->pdf->AddPage();
-                $this->pdf->SetY(30);
-            }
-            
-            $this->pdf->Cell(15, 6, $cantidad, 1, 0, 'C');
-            $this->pdf->Cell(20, 6, $bien->getNaturaleza(), 1, 0, 'C');
-            $this->pdf->Cell(35, 6, $bien->getIdentificacion() ?: 'N/A', 1, 0, 'L');
-            
-            $descripcion = $bien->getDescripcion();
-            if (strlen($descripcion) > 45) {
-                $descripcion = substr($descripcion, 0, 42) . '...';
-            }
-            $this->pdf->Cell(80, 6, $descripcion, 1, 0, 'L');
-            
-            $this->pdf->Cell(30, 6, 'Bueno', 1, 1, 'C');
-        }
-        
-        $this->pdf->Ln(5);
-    }
-    
-    private function llenarObservaciones($datos)
-    {
-        if (!empty($datos['observaciones'])) {
-            $this->pdf->SetFont('helvetica', 'B', 10);
-            $this->pdf->Cell(0, 6, 'OBSERVACIONES', 0, 1, 'L');
-            
-            $this->pdf->SetFont('helvetica', '', 9);
-            $this->pdf->MultiCell(0, 5, $datos['observaciones'], 1, 'J');
-            $this->pdf->Ln(3);
+    private function marcarCasillaNaturaleza($nat) {
+        $coords = array('BC' => array(14, 232), 'BMC' => array(14, 241), 'BMNC' => array(112, 232), 'BPS' => array(112, 241));
+        if (isset($coords[$nat])) {
+            $this->pdf->SetFillColor(173, 216, 230);
+            $this->pdf->SetAlpha(0.5);
+            $this->pdf->Rect($coords[$nat][0], $coords[$nat][1], 15, 5, 'F');
+            $this->pdf->SetAlpha(1.0);
         }
     }
-    
-    private function agregarLeyenda()
-    {
-        $this->pdf->SetFont('helvetica', 'B', 9);
-        $this->pdf->Cell(0, 5, 'NATURALEZA DE LOS BIENES:', 0, 1, 'L');
-        
-        $this->pdf->SetFont('helvetica', '', 8);
-        $leyenda = 'BC = Bien Consumible | BMC = Bien Mueble Capitalizable | ' .
-                   'BMNC = Bien Mueble No Capitalizable | BPS = Bien Propiedad del Solicitante';
-        $this->pdf->MultiCell(0, 4, $leyenda, 0, 'L');
-        $this->pdf->Ln(5);
-    }
-    
-    private function llenarFirmas($datos)
-    {
-        $yFirmas = max($this->pdf->GetY() + 10, 240);
-        
-        if ($yFirmas > 260) {
-            $this->pdf->AddPage();
-            $yFirmas = 50;
+
+    private function marcarDevolucion($dev, $fecha) {
+        if (strtolower($dev) == 'si') {
+            $this->pdf->SetXY(77, 144); $this->pdf->Write(15, 'X');
+            if ($fecha) { $this->pdf->SetXY(115, 146.5); $this->pdf->Write(10, $fecha); }
+        } else {
+            $this->pdf->SetXY(92, 144); $this->pdf->Write(15, 'X');
         }
-        
-        $this->pdf->SetY($yFirmas);
-        
-        // Tres columnas de firmas
-        $anchoCol = 60;
-        $xCol1 = 15;
-        $xCol2 = 80;
-        $xCol3 = 145;
-        
-        // AUTORIZA
-        $this->pdf->SetXY($xCol1, $yFirmas);
-        $this->pdf->SetFont('helvetica', 'B', 9);
-        $this->pdf->Cell($anchoCol, 6, 'AUTORIZA', 0, 1, 'C');
-        
-        $this->pdf->SetX($xCol1);
-        $this->pdf->SetFont('helvetica', '', 7);
-        $this->pdf->Cell($anchoCol, 4, 'Jefe de Área', 0, 1, 'C');
-        
-        $this->pdf->SetXY($xCol1, $yFirmas + 20);
-        $this->pdf->Cell($anchoCol, 0, '', 'T', 1, 'C');
-        $this->pdf->SetX($xCol1);
-        $this->pdf->Cell($anchoCol, 4, 'Nombre y Firma', 0, 1, 'C');
-        
-        // RESPONSABLE
-        $this->pdf->SetXY($xCol2, $yFirmas);
-        $this->pdf->SetFont('helvetica', 'B', 9);
-        $this->pdf->Cell($anchoCol, 6, 'RESPONSABLE', 0, 1, 'C');
-        
-        $this->pdf->SetX($xCol2);
-        $this->pdf->SetFont('helvetica', '', 7);
-        $this->pdf->Cell($anchoCol, 4, 'Encargado de Bienes', 0, 1, 'C');
-        
-        $this->pdf->SetXY($xCol2, $yFirmas + 20);
-        $this->pdf->Cell($anchoCol, 0, '', 'T', 1, 'C');
-        $this->pdf->SetX($xCol2);
-        $this->pdf->Cell($anchoCol, 4, 'Nombre y Firma', 0, 1, 'C');
-        
-        // RECIBE
-        $this->pdf->SetXY($xCol3, $yFirmas);
-        $this->pdf->SetFont('helvetica', 'B', 9);
-        $this->pdf->Cell($anchoCol, 6, 'RECIBE', 0, 1, 'C');
-        
-        $this->pdf->SetX($xCol3);
-        $this->pdf->SetFont('helvetica', '', 7);
-        $this->pdf->Cell($anchoCol, 4, 'Usuario', 0, 1, 'C');
-        
-        $this->pdf->SetXY($xCol3, $yFirmas + 20);
-        $this->pdf->Cell($anchoCol, 0, '', 'T', 1, 'C');
-        $this->pdf->SetX($xCol3);
-        $this->pdf->Cell($anchoCol, 4, 'Nombre y Firma', 0, 1, 'C');
-        
-        // Fecha
-        $this->pdf->Ln(8);
-        $this->pdf->SetFont('helvetica', '', 9);
-        $fecha = !empty($datos['lugar_fecha']) ? $datos['lugar_fecha'] : date('d/m/Y');
-        $this->pdf->Cell(0, 5, 'Fecha: ' . $fecha, 0, 1, 'C');
-        
-        // Número de forma
-        $this->pdf->SetY(-15);
-        $this->pdf->SetFont('helvetica', 'I', 8);
-        $this->pdf->Cell(0, 10, 'Forma CBM-2', 0, 0, 'R');
+    }
+
+    private function formatFecha($f) {
+        setlocale(LC_TIME, 'es_MX.UTF-8', 'spanish');
+        return strftime("%d de %B de %Y", strtotime($f));
     }
 }
