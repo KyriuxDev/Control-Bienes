@@ -6,7 +6,7 @@ use App\Domain\Repository\TrabajadorRepositoryInterface;
 use App\Domain\Entity\Trabajador;
 use PDO;
 
-class MySQLTrabajadorRepository extends MySQLAbstractRepository implements TrabajadorRepositoryInterface
+class MySQLTrabajadorRepository implements TrabajadorRepositoryInterface
 {
     protected $table = 'trabajador';
     protected $entityClass = Trabajador::class;

@@ -1,8 +1,9 @@
 <?php
 namespace App\Domain\Repository;
 
-interface BienRepositoryInterface extends RepositoryInterface
+interface BienRepositoryInterface 
 {
-    public function findByNaturaleza($naturaleza);
-    public function findByIdentificacion($identificacion);
+    public function obtenerPorId($id_bien);
+    public function obtenerTodos();
+    public function guardar(Bien $bien);
 }

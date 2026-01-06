@@ -1,7 +1,8 @@
 <?php
+
 namespace App\Domain\Repository;
 
-interface TrabajadorRepositoryInterface extends RepositoryInterface
+interface TrabajadorRepositoryInterface 
 {
-    public function findByMatricula($matricula);
+    public function obtenerPorMatricula($matricula);
 }

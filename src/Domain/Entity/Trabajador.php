@@ -3,17 +3,24 @@
 
 namespace App\Domain\Entity;
 
-class Trabajador extends AbstractEntity
+class Trabajador
 {
-    protected $nombre;
-    protected $cargo;
-    protected $institucion;
-    protected $adscripcion;
-    protected $matricula;
-    protected $identificacion;
-    protected $direccion;
-    protected $telefono;
-    protected $fecha_registro;
+    public $matricula;
+    public $nombre;
+    public $institucion; //Institucion o Dependencia
+    public $adscripcion; //Adscripcion o Dirección
+    public $identificacion;
+    public $telefono;
+    public $cargo;
+
+    public function getMatricula() {
+        return $this->matricula;
+    }
+
+    public function setMatricula($matricula) {
+        $this->matricula = $matricula;
+        return $this;
+    }
 
     public function getNombre() {
         return $this->nombre;
@@ -21,15 +28,6 @@ class Trabajador extends AbstractEntity
 
     public function setNombre($nombre) {
         $this->nombre = $nombre;
-        return $this;
-    }
-
-    public function getCargo() {
-        return $this->cargo;
-    }
-
-    public function setCargo($cargo) {
-        $this->cargo = $cargo;
         return $this;
     }
 
@@ -51,30 +49,12 @@ class Trabajador extends AbstractEntity
         return $this;
     }
 
-    public function getMatricula() {
-        return $this->matricula;
-    }
-
-    public function setMatricula($matricula) {
-        $this->matricula = $matricula;
-        return $this;
-    }
-
     public function getIdentificacion() {
         return $this->identificacion;
     }
 
     public function setIdentificacion($identificacion) {
         $this->identificacion = $identificacion;
-        return $this;
-    }
-
-    public function getDireccion() {
-        return $this->direccion;
-    }
-
-    public function setDireccion($direccion) {
-        $this->direccion = $direccion;
         return $this;
     }
 
@@ -87,16 +67,14 @@ class Trabajador extends AbstractEntity
         return $this;
     }
 
-    public function getFechaRegistro() {
-        return $this->fecha_registro;
+    public function getCargo() {
+        return $this->cargo;
     }
 
-    public function setFechaRegistro($fecha_registro) {
-        $this->fecha_registro= $fecha_registro;
+    public function setCargo($cargo) {
+        $this->cargo = $cargo;
         return $this;
     }
-
-
     
 }
 

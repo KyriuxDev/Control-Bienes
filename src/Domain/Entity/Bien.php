@@ -2,32 +2,31 @@
 // src/Domain/Entity/Bien.php
 namespace App\Domain\Entity;
 
-class Bien extends AbstractEntity
+class Bien
 {
-    protected $identificacion;
-    protected $descripcion;
-    protected $marca;
-    protected $modelo;
-    protected $serie;
-    protected $naturaleza;
-    protected $estado_fisico;
-    protected $fecha_registro;
 
-    public function getIdentificacion() {
-        return $this->identificacion;
+    public $id_bien;
+    public $naturaleza;
+    public $marca;
+    public $modelo;
+    public $serie;
+    public $descripcion;
+
+    public function getIdBien() {
+        return $this->id_bien;
     }
 
-    public function setIdentificacion($identificacion) {
-        $this->identificacion = $identificacion;
+    public function setIdBien($id_bien) {
+        $this->id_bien = $id_bien;
         return $this;
     }
 
-    public function getDescripcion() {
-        return $this->descripcion;
+    public function getNaturaleza() {
+        return $this->naturaleza;
     }
 
-    public function setDescripcion($descripcion) {
-        $this->descripcion = $descripcion;
+    public function setNaturaleza($naturaleza) {
+        $this->naturaleza = $naturaleza;
         return $this;
     }
 
@@ -58,30 +57,13 @@ class Bien extends AbstractEntity
         return $this;
     }
 
-    public function getNaturaleza() {
-        return $this->naturaleza;
+    public function getDescripcion() {
+        return $this->descripcion;
     }
 
-    public function setNaturaleza($naturaleza) {
-        $this->naturaleza = $naturaleza;
+    public function setDescripcion($descripcion) {
+        $this->descripcion = $descripcion;
         return $this;
     }
 
-    public function getEstadoFisico() {
-        return $this->estado_fisico;
-    }
-
-    public function setEstadoFisico($estado_fisico) {
-        $this->estado_fisico = $estado_fisico;
-        return $this;
-    }
-
-    public function getFechaRegistro() {
-        return $this->fecha_registro;
-    }
-
-    public function setFechaRegistro($fecha_registro) {
-        $this->fecha_registro = $fecha_registro;
-        return $this;
-    }
 }
