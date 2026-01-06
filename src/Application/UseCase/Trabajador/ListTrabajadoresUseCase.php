@@ -16,21 +16,18 @@ class ListTrabajadoresUseCase
 
     public function execute()
     {
-        $trabajadores = $this->trabajadorRepository->getAll();
+        $trabajadores = $this->trabajadorRepository->obtenerTodos();
         
         $trabajadoresDTO = [];
         foreach ($trabajadores as $trabajador) {
             $trabajadoresDTO[] = new TrabajadorDTO([
-                'id' => $trabajador->getId(),
+                'matricula' => $trabajador->getMatricula(),
                 'nombre' => $trabajador->getNombre(),
                 'cargo' => $trabajador->getCargo(),
                 'institucion' => $trabajador->getInstitucion(),
                 'adscripcion' => $trabajador->getAdscripcion(),
-                'matricula' => $trabajador->getMatricula(),
                 'identificacion' => $trabajador->getIdentificacion(),
-                'direccion' => $trabajador->getDireccion(),
-                'telefono' => $trabajador->getTelefono(),
-                'fecha_registro' => $trabajador->getFechaRegistro()
+                'telefono' => $trabajador->getTelefono()
             ]);
         }
 

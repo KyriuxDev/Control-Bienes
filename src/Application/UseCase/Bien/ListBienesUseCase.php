@@ -16,20 +16,17 @@ class ListBienesUseCase
 
     public function execute()
     {
-        $bienes = $this->bienRepository->getAll();
+        $bienes = $this->bienRepository->obtenerTodos();
         
         $bienesDTO = [];
         foreach ($bienes as $bien) {
             $bienesDTO[] = new BienDTO([
-                'id' => $bien->getId(),
-                'identificacion' => $bien->getIdentificacion(),
-                'descripcion' => $bien->getDescripcion(),
+                'id_bien' => $bien->getIdBien(),
+                'naturaleza' => $bien->getNaturaleza(),
                 'marca' => $bien->getMarca(),
                 'modelo' => $bien->getModelo(),
                 'serie' => $bien->getSerie(),
-                'naturaleza' => $bien->getNaturaleza(),
-                'estado_fisico' => $bien->getEstadoFisico(),
-                'fecha_registro' => $bien->getFechaRegistro()
+                'descripcion' => $bien->getDescripcion()
             ]);
         }
 
@@ -38,20 +35,23 @@ class ListBienesUseCase
 
     public function executeByNaturaleza($naturaleza)
     {
-        $bienes = $this->bienRepository->findByNaturaleza($naturaleza);
+        // Validar que la naturaleza sea válida
+        $naturalezasValidas = ['BC', 'BMNC', 'BMC', 'BPS'];
+        if (!in_array($naturaleza, $naturalezasValidas)) {
+            throw new \Exception("Naturaleza inválida. Debe ser: BC, BMNC, BMC o BPS");
+        }
+
+        $bienes = $this->bienRepository->buscarPorNaturaleza($naturaleza);
         
         $bienesDTO = [];
         foreach ($bienes as $bien) {
             $bienesDTO[] = new BienDTO([
-                'id' => $bien->getId(),
-                'identificacion' => $bien->getIdentificacion(),
-                'descripcion' => $bien->getDescripcion(),
+                'id_bien' => $bien->getIdBien(),
+                'naturaleza' => $bien->getNaturaleza(),
                 'marca' => $bien->getMarca(),
                 'modelo' => $bien->getModelo(),
                 'serie' => $bien->getSerie(),
-                'naturaleza' => $bien->getNaturaleza(),
-                'estado_fisico' => $bien->getEstadoFisico(),
-                'fecha_registro' => $bien->getFechaRegistro()
+                'descripcion' => $bien->getDescripcion()
             ]);
         }
 

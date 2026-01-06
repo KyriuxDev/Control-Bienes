@@ -16,22 +16,19 @@ class UpdateTrabajadorUseCase
 
     public function execute(TrabajadorDTO $dto)
     {
-        if (!$dto->id) {
-            throw new \Exception("ID de trabajador requerido para actualizar");
+        if (!$dto->matricula) {
+            throw new \Exception("Matrícula de trabajador requerida para actualizar");
         }
 
         // Buscar el trabajador existente
-        $trabajador = $this->trabajadorRepository->getById($dto->id);
+        $trabajador = $this->trabajadorRepository->obtenerPorMatricula($dto->matricula);
         if (!$trabajador) {
             throw new \Exception("Trabajador no encontrado");
         }
 
-        // Validar matrícula si cambió
-        if ($dto->matricula && $dto->matricula !== $trabajador->getMatricula()) {
-            $existente = $this->trabajadorRepository->findByMatricula($dto->matricula);
-            if ($existente) {
-                throw new \Exception("La matrícula {$dto->matricula} ya existe");
-            }
+        // Validar formato de teléfono si se proporciona
+        if ($dto->telefono && !preg_match('/^[0-9]{10}$/', $dto->telefono)) {
+            throw new \Exception("El teléfono debe contener 10 dígitos numéricos");
         }
 
         // Actualizar datos
@@ -39,16 +36,12 @@ class UpdateTrabajadorUseCase
         if ($dto->cargo) $trabajador->setCargo($dto->cargo);
         if ($dto->institucion) $trabajador->setInstitucion($dto->institucion);
         if ($dto->adscripcion) $trabajador->setAdscripcion($dto->adscripcion);
-        if ($dto->matricula) $trabajador->setMatricula($dto->matricula);
         if ($dto->identificacion) $trabajador->setIdentificacion($dto->identificacion);
-        if ($dto->direccion) $trabajador->setDireccion($dto->direccion);
         if ($dto->telefono) $trabajador->setTelefono($dto->telefono);
 
         // Guardar
-        $this->trabajadorRepository->begin();
         try {
             $this->trabajadorRepository->persist($trabajador);
-            $this->trabajadorRepository->commit();
             return $dto;
         } catch (\Exception $e) {
             throw new \Exception("Error al actualizar trabajador: " . $e->getMessage());

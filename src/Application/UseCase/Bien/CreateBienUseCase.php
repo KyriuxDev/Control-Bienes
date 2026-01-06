@@ -28,32 +28,20 @@ class CreateBienUseCase
             throw new \Exception("Naturaleza inválida. Debe ser: BC, BMNC, BMC o BPS");
         }
 
-        // Validar que la identificación no exista si se proporciona
-        if ($dto->identificacion) {
-            $existente = $this->bienRepository->findByIdentificacion($dto->identificacion);
-            if ($existente) {
-                throw new \Exception("La identificación {$dto->identificacion} ya existe");
-            }
-        }
-
         // Crear la entidad
         $bien = new Bien();
-        $bien->setIdentificacion($dto->identificacion)
-             ->setDescripcion($dto->descripcion)
+        $bien->setNaturaleza($dto->naturaleza)
              ->setMarca($dto->marca)
              ->setModelo($dto->modelo)
              ->setSerie($dto->serie)
-             ->setNaturaleza($dto->naturaleza)
-             ->setEstadoFisico($dto->estado_fisico);
+             ->setDescripcion($dto->descripcion);
 
         // Guardar
-        $this->bienRepository->begin();
         try {
             $this->bienRepository->persist($bien);
-            $this->bienRepository->commit();
             
             // Retornar DTO con el ID generado
-            $dto->id = $bien->getId();
+            $dto->id_bien = $bien->getIdBien();
             return $dto;
         } catch (\Exception $e) {
             throw new \Exception("Error al crear bien: " . $e->getMessage());

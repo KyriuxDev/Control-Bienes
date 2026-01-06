@@ -14,47 +14,22 @@ class GetTrabajadorUseCase
         $this->trabajadorRepository = $trabajadorRepository;
     }
 
-    public function execute($id)
+    public function execute($matricula)
     {
-        $trabajador = $this->trabajadorRepository->getById($id);
+        $trabajador = $this->trabajadorRepository->obtenerPorMatricula($matricula);
         
         if (!$trabajador) {
             throw new \Exception("Trabajador no encontrado");
         }
 
         return new TrabajadorDTO([
-            'id' => $trabajador->getId(),
+            'matricula' => $trabajador->getMatricula(),
             'nombre' => $trabajador->getNombre(),
             'cargo' => $trabajador->getCargo(),
             'institucion' => $trabajador->getInstitucion(),
             'adscripcion' => $trabajador->getAdscripcion(),
-            'matricula' => $trabajador->getMatricula(),
             'identificacion' => $trabajador->getIdentificacion(),
-            'direccion' => $trabajador->getDireccion(),
-            'telefono' => $trabajador->getTelefono(),
-            'fecha_registro' => $trabajador->getFechaRegistro()
-        ]);
-    }
-
-    public function executeByMatricula($matricula)
-    {
-        $trabajador = $this->trabajadorRepository->findByMatricula($matricula);
-        
-        if (!$trabajador) {
-            throw new \Exception("Trabajador con matrícula {$matricula} no encontrado");
-        }
-
-        return new TrabajadorDTO([
-            'id' => $trabajador->getId(),
-            'nombre' => $trabajador->getNombre(),
-            'cargo' => $trabajador->getCargo(),
-            'institucion' => $trabajador->getInstitucion(),
-            'adscripcion' => $trabajador->getAdscripcion(),
-            'matricula' => $trabajador->getMatricula(),
-            'identificacion' => $trabajador->getIdentificacion(),
-            'direccion' => $trabajador->getDireccion(),
-            'telefono' => $trabajador->getTelefono(),
-            'fecha_registro' => $trabajador->getFechaRegistro()
+            'telefono' => $trabajador->getTelefono()
         ]);
     }
 }

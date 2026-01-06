@@ -14,45 +14,21 @@ class GetBienUseCase
         $this->bienRepository = $bienRepository;
     }
 
-    public function execute($id)
+    public function execute($id_bien)
     {
-        $bien = $this->bienRepository->getById($id);
+        $bien = $this->bienRepository->obtenerPorId($id_bien);
         
         if (!$bien) {
             throw new \Exception("Bien no encontrado");
         }
 
         return new BienDTO([
-            'id' => $bien->getId(),
-            'identificacion' => $bien->getIdentificacion(),
-            'descripcion' => $bien->getDescripcion(),
+            'id_bien' => $bien->getIdBien(),
+            'naturaleza' => $bien->getNaturaleza(),
             'marca' => $bien->getMarca(),
             'modelo' => $bien->getModelo(),
             'serie' => $bien->getSerie(),
-            'naturaleza' => $bien->getNaturaleza(),
-            'estado_fisico' => $bien->getEstadoFisico(),
-            'fecha_registro' => $bien->getFechaRegistro()
-        ]);
-    }
-
-    public function executeByIdentificacion($identificacion)
-    {
-        $bien = $this->bienRepository->findByIdentificacion($identificacion);
-        
-        if (!$bien) {
-            throw new \Exception("Bien con identificación {$identificacion} no encontrado");
-        }
-
-        return new BienDTO([
-            'id' => $bien->getId(),
-            'identificacion' => $bien->getIdentificacion(),
-            'descripcion' => $bien->getDescripcion(),
-            'marca' => $bien->getMarca(),
-            'modelo' => $bien->getModelo(),
-            'serie' => $bien->getSerie(),
-            'naturaleza' => $bien->getNaturaleza(),
-            'estado_fisico' => $bien->getEstadoFisico(),
-            'fecha_registro' => $bien->getFechaRegistro()
+            'descripcion' => $bien->getDescripcion()
         ]);
     }
 }
