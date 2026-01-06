@@ -42,14 +42,13 @@ try {
     $useCase = new CreateTrabajadorUseCase($trabajadorRepo);
     
     $dto = new TrabajadorDTO([
-        'nombre' => trim($_POST['nombre']),
         'matricula' => trim($_POST['matricula']),
-        'cargo' => trim($_POST['cargo']),
-        'institucion' => isset($_POST['institucion']) ? trim($_POST['institucion']) : 'Instituto Mexicano del Seguro Social',
+        'nombre' => trim($_POST['nombre']),
+        'institucion' => isset($_POST['institucion']) ? trim($_POST['institucion']) : '',
         'adscripcion' => isset($_POST['adscripcion']) ? trim($_POST['adscripcion']) : '',
-        'telefono' => isset($_POST['telefono']) ? trim($_POST['telefono']) : '',
         'identificacion' => isset($_POST['identificacion']) ? trim($_POST['identificacion']) : '',
-        'direccion' => isset($_POST['direccion']) ? trim($_POST['direccion']) : ''
+        'telefono' => isset($_POST['telefono']) ? trim($_POST['telefono']) : '',
+        'cargo' => trim($_POST['cargo'])
     ]);
     
     $resultado = $useCase->execute($dto);
@@ -57,20 +56,18 @@ try {
     // Limpiar buffer antes de enviar JSON
     ob_clean();
     
-    // Usar propiedades públicas en lugar de métodos get
+    // Usar propiedades públicas del DTO directamente
     echo json_encode([
         'success' => true,
         'message' => 'Trabajador guardado correctamente',
         'trabajador' => [
-            'id' => $resultado->id,
-            'nombre' => $resultado->nombre,
             'matricula' => $resultado->matricula,
-            'cargo' => $resultado->cargo,
+            'nombre' => $resultado->nombre,
             'institucion' => $resultado->institucion,
             'adscripcion' => $resultado->adscripcion,
-            'telefono' => $resultado->telefono,
             'identificacion' => isset($resultado->identificacion) ? $resultado->identificacion : '',
-            'direccion' => isset($resultado->direccion) ? $resultado->direccion : ''
+            'telefono' => $resultado->telefono,
+            'cargo' => $resultado->cargo
         ]
     ]);
 

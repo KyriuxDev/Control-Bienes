@@ -13,8 +13,8 @@ $pdo = $db->getConnection();
 $trabajadorRepo = new MySQLTrabajadorRepository($pdo);
 $bienRepo = new MySQLBienRepository($pdo);
 
-$trabajadores = $trabajadorRepo->getAll();
-$bienesCatalogo = $bienRepo->getAll();
+$trabajadores = $trabajadorRepo->obtenerTodos();
+$bienesCatalogo = $bienRepo->obtenerTodos();
 ?>
 <!DOCTYPE html>
 <html lang="es" class="light">
@@ -301,19 +301,19 @@ $bienesCatalogo = $bienRepo->getAll();
                                 <label class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
                                     Seleccionar Trabajador <span class="text-red-500">*</span>
                                 </label>
-                                <select name="trabajador_id" 
-                                        id="trabajador_id" 
+                                <select name="trabajador_matricula" 
+                                        id="trabajador_matricula" 
                                         class="w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-white" 
                                         required 
                                         onchange="mostrarDatosTrabajador(this)">
                                     <option value="">-- Seleccione un trabajador --</option>
                                     <?php foreach($trabajadores as $t): ?>
-                                        <option value="<?php echo $t->getId(); ?>" 
-                                            data-mat="<?php echo htmlspecialchars($t->getMatricula()); ?>"
-                                            data-cargo="<?php echo htmlspecialchars($t->getCargo()); ?>"
-                                            data-ads="<?php echo htmlspecialchars($t->getAdscripcion()); ?>"
-                                            data-tel="<?php echo htmlspecialchars($t->getTelefono()); ?>">
-                                            <?php echo htmlspecialchars($t->getNombre()); ?>
+                                        <option value="<?php echo $t->matricula; ?>" 
+                                            data-mat="<?php echo htmlspecialchars($t->matricula); ?>"
+                                            data-cargo="<?php echo htmlspecialchars($t->cargo); ?>"
+                                            data-ads="<?php echo htmlspecialchars($t->adscripcion); ?>"
+                                            data-tel="<?php echo htmlspecialchars($t->telefono); ?>">
+                                            <?php echo htmlspecialchars($t->nombre); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -409,8 +409,8 @@ $bienesCatalogo = $bienRepo->getAll();
                             <select name="bienes[0][bien_id]" class="flex-grow rounded-lg border-gray-300 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
                                 <option value="">-- Seleccionar Bien --</option>
                                 <?php foreach($bienesCatalogo as $b): ?>
-                                    <option value="<?php echo $b->getId(); ?>">
-                                        <?php echo htmlspecialchars($b->getIdentificacion()); ?> - <?php echo htmlspecialchars($b->getDescripcion()); ?>
+                                    <option value="<?php echo $b->id_bien; ?>">
+                                        <?php echo htmlspecialchars($b->serie ?: 'BIEN-'.$b->id_bien); ?> - <?php echo htmlspecialchars($b->descripcion); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -486,15 +486,19 @@ $bienesCatalogo = $bienRepo->getAll();
                 <input type="text" name="nombre" class="w-full rounded-lg border-gray-300 bg-gray-50 focus:ring-accent dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Juan Pérez López" required>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Matrícula (No. Empleado) *</label>
+                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Matrícula *</label>
                 <input type="text" name="matricula" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="IMSS-0000" required>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Cargo / Puesto *</label>
+                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Cargo *</label>
                 <input type="text" name="cargo" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Médico General" required>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Adscripción / Área *</label>
+                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Institucion *</label>
+                <input type="text" name="institucion" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Urgencias">
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Adscripción *</label>
                 <input type="text" name="adscripcion" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Urgencias">
             </div>
             <div>
@@ -504,10 +508,6 @@ $bienesCatalogo = $bienRepo->getAll();
             <div>
                 <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Identificacion *</label>
                 <input type="tel" name="identificacion" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="No se JAJAJAJ">
-            </div>
-            <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Dirección *</label>
-                <input type="tel" name="direccion" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="No me acuerdo">
             </div>
             <div class="md:col-span-2 pt-4 border-t border-imss-border dark:border-gray-700 flex justify-end gap-3">
                 <button type="button" onclick="toggleModal('modal-trabajador')" class="px-6 py-2 rounded-lg text-gray-500 font-bold hover:bg-gray-100 dark:hover:bg-gray-800 transition">
@@ -616,7 +616,11 @@ $bienesCatalogo = $bienRepo->getAll();
             </div>
             <select name="bienes[${bIdx}][bien_id]" class="flex-grow rounded-lg border-gray-300 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
                 <option value="">-- Seleccionar Bien --</option>
-                <?php foreach($bienesCatalogo as $b): echo "<option value='".$b->getId()."'>".htmlspecialchars($b->getIdentificacion())." - ".htmlspecialchars($b->getDescripcion())."</option>"; endforeach; ?>
+                <?php foreach($bienesCatalogo as $b): 
+                    echo "<option value='".$b->id_bien."'>".
+                        htmlspecialchars($b->serie ?: 'BIEN-'.$b->id_bien)." - ".
+                        htmlspecialchars($b->descripcion)."</option>"; 
+                endforeach; ?>
             </select>
             <div class="flex items-center gap-2">
                 <label class="text-xs font-bold text-gray-500 whitespace-nowrap">Cantidad:</label>
@@ -635,7 +639,7 @@ $bienesCatalogo = $bienRepo->getAll();
         const form = document.querySelector('form');
         
         // Validar que hay un trabajador seleccionado
-        const trabajadorId = document.getElementById('trabajador_id').value;
+        const trabajadorId = document.getElementById('trabajador_matricula').value;
         if (!trabajadorId) {
             alert('Por favor seleccione un trabajador');
             return;
@@ -683,18 +687,18 @@ $bienesCatalogo = $bienRepo->getAll();
         .then(data => {
             if (data.success) {
                 // Agregar al select
-                const select = document.getElementById('trabajador_id');
+                const select = document.getElementById('trabajador_matricula');
                 const option = document.createElement('option');
-                option.value = data.trabajador.id;
+                option.value = data.trabajador.matricula; // Usar matrícula como value
                 option.textContent = data.trabajador.nombre;
                 option.setAttribute('data-mat', data.trabajador.matricula);
                 option.setAttribute('data-cargo', data.trabajador.cargo);
                 option.setAttribute('data-ads', data.trabajador.adscripcion);
                 option.setAttribute('data-tel', data.trabajador.telefono);
                 select.appendChild(option);
-                
+
                 // Seleccionar el nuevo trabajador
-                select.value = data.trabajador.id;
+                select.value = data.trabajador.matricula;
                 mostrarDatosTrabajador(select);
                 
                 // Cerrar modal y limpiar formulario

@@ -35,20 +35,13 @@ try {
     
     $useCase = new CreateBienUseCase($bienRepo);
     
+    // Crear DTO según la estructura de BienDTO
     $dto = new BienDTO([
         'descripcion' => trim($_POST['descripcion']),
-        'identificacion' => !empty($_POST['identificacion']) 
-                           ? trim($_POST['identificacion']) 
-                           : 'AUTO-' . time(),
-        'naturaleza' => !empty($_POST['naturaleza']) 
-                       ? $_POST['naturaleza'] 
-                       : 'BMNC',
+        'naturaleza' => !empty($_POST['naturaleza']) ? $_POST['naturaleza'] : 'BMNC',
         'marca' => isset($_POST['marca']) ? trim($_POST['marca']) : '',
         'modelo' => isset($_POST['modelo']) ? trim($_POST['modelo']) : '',
-        'serie' => isset($_POST['serie']) ? trim($_POST['serie']) : '',
-        'estado_fisico' => !empty($_POST['estado_fisico']) 
-                          ? $_POST['estado_fisico'] 
-                          : 'BUENO'
+        'serie' => isset($_POST['serie']) ? trim($_POST['serie']) : ''
     ]);
     
     $resultado = $useCase->execute($dto);
@@ -56,18 +49,17 @@ try {
     // Limpiar buffer antes de enviar JSON
     ob_clean();
     
-    // Usar propiedades públicas en lugar de métodos get
+    // Usar propiedades públicas del DTO directamente
     echo json_encode([
         'success' => true,
         'message' => 'Bien guardado correctamente',
         'bien' => [
-            'id' => $resultado->id,
-            'identificacion' => $resultado->identificacion,
+            'id' => $resultado->id_bien,
             'descripcion' => $resultado->descripcion,
             'marca' => $resultado->marca,
             'modelo' => $resultado->modelo,
             'serie' => $resultado->serie,
-            'estado_fisico' => isset($resultado->estado_fisico) ? $resultado->estado_fisico : ''
+            'naturaleza' => $resultado->naturaleza
         ]
     ]);
 

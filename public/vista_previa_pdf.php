@@ -17,12 +17,12 @@ $trabajadorRepo = new MySQLTrabajadorRepository($pdo);
 $bienRepo = new MySQLBienRepository($pdo);
 
 // 1. Obtener Trabajador
-$trabajador = $trabajadorRepo->getById($_POST['trabajador_id']);
+$trabajador = $trabajadorRepo->obtenerPorMatricula($_POST['matricula']);
 
 // 2. Obtener Bienes
 $bienesSeleccionados = array();
 foreach ($_POST['bienes'] as $item) {
-    $bienObj = $bienRepo->getById($item['bien_id']);
+    $bienObj = $bienRepo->obtenerPorId($item['bien_id']);
     if ($bienObj) {
         $bienesSeleccionados[] = array(
             'bien' => $bienObj,
