@@ -19,10 +19,10 @@ class SalidaDetalleDTO
     
     public function toArray(){
         return array(
-            'id'=>$this->'id',
-            'salida_id' =>$this->'salida_id',
-            'bien_id' =>$this->'bien_id',
-            'cantidad' => $this->'cantidad'
+            'id'=>$this->id,
+            'salida_id' =>$this->salida_id,
+            'bien_id' =>$this->bien_id,
+            'cantidad' => $this->cantidad
         );
     }
 }

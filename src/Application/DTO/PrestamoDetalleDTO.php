@@ -19,10 +19,10 @@ class PrestamoDetalleDTO
     
     public function toArray(){
         return array(
-            'id'=>$this->'id',
-            'prestamo_id' =>$this->'prestamo_id',
-            'bien_id' =>$this->'bien_id',
-            'cantidad' => $this->'cantidad'
+            'id'=>$this->id,
+            'prestamo_id' =>$this->prestamo_id,
+            'bien_id' =>$this->bien_id,
+            'cantidad' => $this->cantidad
         );
     }
 }

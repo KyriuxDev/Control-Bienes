@@ -27,7 +27,7 @@ try {
         'nombre' => $_POST['nombre'],
         'matricula' => $_POST['matricula'],
         'cargo' => $_POST['cargo'],
-        'institucion' => isset($_POST['institucion']) ? $_POST['institucion'] : 'IMSS',
+        'institucion' => isset($_POST['institucion']) ? $_POST['institucion'] : 'Instituto Mexicano del Seguro Social',
         'adscripcion' => isset($_POST['adscripcion']) ? $_POST['adscripcion'] : '',
         'telefono' => isset($_POST['telefono']) ? $_POST['telefono'] : '',
         'identificacion' => isset($_POST['identificacion']) ? $_POST['identificacion'] : '',
@@ -35,19 +35,6 @@ try {
     ]);
     
     $resultado = $useCase->execute($dto);
-
-    echo json_encode([
-        'success' => true,
-        'message' => 'Trabajador guardado correctamente',
-        'trabajador' => [
-            'id' => $resultado->id,
-            'nombre' => $resultado->nombre,
-            'matricula' => $resultado->matricula,
-            'cargo' => $resultado->cargo,
-            'adscripcion' => $resultado->adscripcion,
-            'telefono' => $resultado->telefono
-        ]
-    ]);
 
 } catch (Exception $e) {
     echo json_encode([

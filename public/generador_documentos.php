@@ -483,23 +483,31 @@ $bienesCatalogo = $bienRepo->getAll();
         <form class="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="md:col-span-2">
                 <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Nombre Completo *</label>
-                <input type="text" class="w-full rounded-lg border-gray-300 bg-gray-50 focus:ring-accent dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Juan Pérez López" required>
+                <input type="text" name="nombre" class="w-full rounded-lg border-gray-300 bg-gray-50 focus:ring-accent dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Juan Pérez López" required>
             </div>
             <div>
                 <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Matrícula (No. Empleado) *</label>
-                <input type="text" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="IMSS-0000" required>
+                <input type="text" name="matricula" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="IMSS-0000" required>
             </div>
             <div>
                 <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Cargo / Puesto *</label>
-                <input type="text" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Médico General" required>
+                <input type="text" name="cargo" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Médico General" required>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Adscripción / Área</label>
-                <input type="text" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Urgencias">
+                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Adscripción / Área *</label>
+                <input type="text" name="adscripcion" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Urgencias">
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Teléfono</label>
-                <input type="tel" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="(55) 0000 0000">
+                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Teléfono *</label>
+                <input type="tel" name="telefono" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="951 874 7412">
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Identificacion *</label>
+                <input type="tel" name="identificacion" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="No se JAJAJAJ">
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Dirección *</label>
+                <input type="tel" name="direccion" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="No me acuerdo">
             </div>
             <div class="md:col-span-2 pt-4 border-t border-imss-border dark:border-gray-700 flex justify-end gap-3">
                 <button type="button" onclick="toggleModal('modal-trabajador')" class="px-6 py-2 rounded-lg text-gray-500 font-bold hover:bg-gray-100 dark:hover:bg-gray-800 transition">
@@ -555,6 +563,10 @@ $bienesCatalogo = $bienRepo->getAll();
                 <div>
                     <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Serie</label>
                     <input type="text" name="serie" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. SN123456">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Estado</label>
+                    <input type="text" name="estado" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Excelente">
                 </div>
             </div>
             <div class="pt-4 border-t border-imss-border dark:border-gray-700 flex justify-end gap-3">
