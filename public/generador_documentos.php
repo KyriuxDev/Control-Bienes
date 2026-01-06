@@ -566,7 +566,7 @@ $bienesCatalogo = $bienRepo->getAll();
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Estado</label>
-                    <input type="text" name="estado" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Excelente">
+                    <input type="text" name="estado_fisico" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Excelente">
                 </div>
             </div>
             <div class="pt-4 border-t border-imss-border dark:border-gray-700 flex justify-end gap-3">
