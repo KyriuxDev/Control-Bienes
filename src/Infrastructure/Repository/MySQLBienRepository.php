@@ -1,76 +1,97 @@
 <?php
-// src/Domain/Repository/MySQLBienRepository.php
+// src/Infrastructure/Repository/MySQLBienRepository.php
 namespace App\Infrastructure\Repository;
-use App\Domain\Repository\BienRepositoryInterface;
 
+use App\Domain\Repository\BienRepositoryInterface;
 use App\Domain\Entity\Bien;
 use PDO;
 
-class MySQLBienRepository extends MySQLAbstractRepository implements BienRepositoryInterface
+class MySQLBienRepository implements BienRepositoryInterface
 {
+    protected $pdo;
     protected $table = 'bien';
     protected $entityClass = Bien::class;
 
-    protected function save($entity)
+    public function __construct(PDO $pdo)
     {
-        $sql = "INSERT INTO {$this->table} (identificacion, descripcion, marca, modelo, serie, naturaleza, estado_fisico) 
-                VALUES (:identificacion, :descripcion, :marca, :modelo, :serie, :naturaleza, :estado_fisico)";
+        $this->pdo = $pdo;
+    }
+
+    public function persist($entity)
+    {
+        if ($entity->getIdBien()) {
+            return $this->actualizar($entity);
+        } else {
+            return $this->guardar($entity);
+        }
+    }
+
+    protected function guardar($entity)
+    {
+        $sql = "INSERT INTO {$this->table} (naturaleza, marca, modelo, serie, descripcion) 
+                VALUES (:naturaleza, :marca, :modelo, :serie, :descripcion)";
         
         $stmt = $this->pdo->prepare($sql);
         $result = $stmt->execute([
-            'identificacion' => $entity->getIdentificacion(),
-            'descripcion' => $entity->getDescripcion(),
+            'naturaleza' => $entity->getNaturaleza(),
             'marca' => $entity->getMarca(),
             'modelo' => $entity->getModelo(),
             'serie' => $entity->getSerie(),
-            'naturaleza' => $entity->getNaturaleza(),
-            'estado_fisico' => $entity->getEstadoFisico()
+            'descripcion' => $entity->getDescripcion()
         ]);
         
         if ($result) {
-            $entity->setId($this->pdo->lastInsertId());
+            $entity->setIdBien($this->pdo->lastInsertId());
         }
         
         return $result;
     }
 
-    protected function update($entity)
+    protected function actualizar($entity)
     {
         $sql = "UPDATE {$this->table} 
-                SET identificacion = :identificacion, 
-                    descripcion = :descripcion, 
+                SET naturaleza = :naturaleza, 
                     marca = :marca, 
                     modelo = :modelo, 
                     serie = :serie, 
-                    naturaleza = :naturaleza, 
-                    estado_fisico = :estado_fisico
-                WHERE id = :id";
+                    descripcion = :descripcion
+                WHERE id_bien = :id_bien";
         
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute([
-            'id' => $entity->getId(),
-            'identificacion' => $entity->getIdentificacion(),
-            'descripcion' => $entity->getDescripcion(),
+            'id_bien' => $entity->getIdBien(),
+            'naturaleza' => $entity->getNaturaleza(),
             'marca' => $entity->getMarca(),
             'modelo' => $entity->getModelo(),
             'serie' => $entity->getSerie(),
-            'naturaleza' => $entity->getNaturaleza(),
-            'estado_fisico' => $entity->getEstadoFisico()
+            'descripcion' => $entity->getDescripcion()
         ]);
     }
 
-    public function findByNaturaleza($naturaleza)
+    public function obtenerPorId($id_bien)
+    {
+        $stmt = $this->pdo->prepare("SELECT * FROM {$this->table} WHERE id_bien = :id_bien");
+        $stmt->execute(['id_bien' => $id_bien]);
+        $stmt->setFetchMode(PDO::FETCH_CLASS, $this->entityClass);
+        return $stmt->fetch();
+    }
+
+    public function obtenerTodos()
+    {
+        $stmt = $this->pdo->query("SELECT * FROM {$this->table}");
+        return $stmt->fetchAll(PDO::FETCH_CLASS, $this->entityClass);
+    }
+
+    public function eliminar($id)
+    {
+        $stmt = $this->pdo->prepare("DELETE FROM {$this->table} WHERE id_bien = :id_bien");
+        return $stmt->execute(['id_bien' => $id]);
+    }
+
+    public function buscarPorNaturaleza($naturaleza)
     {
         $stmt = $this->pdo->prepare("SELECT * FROM {$this->table} WHERE naturaleza = :naturaleza");
         $stmt->execute(['naturaleza' => $naturaleza]);
         return $stmt->fetchAll(PDO::FETCH_CLASS, $this->entityClass);
-    }
-
-    public function findByIdentificacion($identificacion)
-    {
-        $stmt = $this->pdo->prepare("SELECT * FROM {$this->table} WHERE identificacion = :identificacion");
-        $stmt->execute(['identificacion' => $identificacion]);
-        $stmt->setFetchMode(PDO::FETCH_CLASS, $this->entityClass);
-        return $stmt->fetch();
     }
 }

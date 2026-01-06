@@ -6,9 +6,8 @@ use App\Domain\Entity\Trabajador;
 
 interface TrabajadorRepositoryInterface 
 {
-    public function obtenerPorId($id);
+    public function obtenerPorMatricula($matricula);
     public function obtenerTodos();
     public function persist($entity);
-    public function eliminar($id);
-    public function buscarPorMatricula($matricula);
+    public function eliminar($matricula);
 }

@@ -8,65 +8,88 @@ use PDO;
 
 class MySQLTrabajadorRepository implements TrabajadorRepositoryInterface
 {
+    protected $pdo;
     protected $table = 'trabajador';
     protected $entityClass = Trabajador::class;
 
-    protected function save($entity)
+    public function __construct(PDO $pdo){
+        $this->pdo = $pdo;
+    }
+
+    public function persist($entity)
     {
-        $sql = "INSERT INTO {$this->table} (nombre, cargo, institucion, adscripcion, matricula, identificacion, direccion, telefono) 
-                VALUES (:nombre, :cargo, :institucion, :adscripcion, :matricula, :identificacion, :direccion, :telefono)";
+        if ($entity->getMatricula()) {
+            return $this->actualizar($entity);
+        } else {
+            return $this->guardar($entity);
+        }
+    }
+
+    protected function guardar($entity)
+    {
+        $sql = "INSERT INTO {$this->table} (matricula, nombre, institucion, adscripcion, identificacion, telefono, cargo) 
+                VALUES (:matricula, :nombre, :institucion, :adscripcion, :identificacion, :telefono, :cargo)";
         
         $stmt = $this->pdo->prepare($sql);
         $result = $stmt->execute([
+            'matricula' => $entity->getMatricula(),
             'nombre' => $entity->getNombre(),
-            'cargo' => $entity->getCargo(),
             'institucion' => $entity->getInstitucion(),
             'adscripcion' => $entity->getAdscripcion(),
-            'matricula' => $entity->getMatricula(),
             'identificacion' => $entity->getIdentificacion(),
-            'direccion' => $entity->getDireccion(),
-            'telefono' => $entity->getTelefono()
+            'telefono' => $entity->getTelefono(),
+            'cargo' => $entity->getCargo()
         ]);
         
         if ($result) {
-            $entity->setId($this->pdo->lastInsertId());
+            $entity->setMatricula($this->pdo->lastInsertId());
         }
         
         return $result;
     }
 
-    protected function update($entity)
+    protected function actualizar($entity)
     {
         $sql = "UPDATE {$this->table} 
-                SET nombre = :nombre, 
-                    cargo = :cargo, 
+                SET matricula = :matricula,
+                    nombre = :nombre, 
                     institucion = :institucion, 
                     adscripcion = :adscripcion, 
-                    matricula = :matricula, 
-                    identificacion = :identificacion, 
-                    direccion = :direccion, 
-                    telefono = :telefono
+                    identificacion = :identificacion,
+                    telefono = :telefono,
+                    cargo = :cargo
                 WHERE id = :id";
         
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute([
-            'id' => $entity->getId(),
+            'matricula' => $entity->getId(),
             'nombre' => $entity->getNombre(),
-            'cargo' => $entity->getCargo(),
             'institucion' => $entity->getInstitucion(),
             'adscripcion' => $entity->getAdscripcion(),
-            'matricula' => $entity->getMatricula(),
             'identificacion' => $entity->getIdentificacion(),
-            'direccion' => $entity->getDireccion(),
-            'telefono' => $entity->getTelefono()
+            'telefono' => $entity->getTelefono(),
+            'cargo' => $entity->getCargo(),
         ]);
     }
 
-    public function findByMatricula($matricula)
+    public function obtenerPorMatricula($matricula)
     {
         $stmt = $this->pdo->prepare("SELECT * FROM {$this->table} WHERE matricula = :matricula");
         $stmt->execute(['matricula' => $matricula]);
         $stmt->setFetchMode(PDO::FETCH_CLASS, $this->entityClass);
         return $stmt->fetch();
     }
+
+    public function obtenerTodos()
+    {
+        $stmt = $this->pdo->query("SELECT * FROM {$this->table}");
+        return $stmt->fetchAll(PDO::FETCH_CLASS, $this->entityClass);
+    }
+
+    public function eliminar($matricula)
+    {
+        $stmt = $this->pdo->prepare("DELETE FROM {$this->table} WHERE matricula = :matricula");
+        return $stmt->execute(['matricula' => $matricula]);
+    }
+
 }
