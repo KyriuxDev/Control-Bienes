@@ -44,7 +44,7 @@ class MySQLMovimientoRepository implements MovimientoRepositoryInterface
         ]);
         
         if ($result) {
-            $entity->setIdBien($this->pdo->lastInsertId());
+            $entity->setIdMovimiento($this->pdo->lastInsertId());
         }
         
         return $result;
@@ -60,12 +60,13 @@ class MySQLMovimientoRepository implements MovimientoRepositoryInterface
                     lugar = :lugar, 
                     area = :area, 
                     folio = :folio,
-                    'dias_prestamo = :dias_prestamo,
+                    dias_prestamo = :dias_prestamo
                 WHERE id_movimiento = :id_movimiento";
         
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute([
             'id_movimiento' => $entity->getIdMovimiento(),
+            'tipo_movimiento' => $entity->getTipoMovimiento(),
             'matricula_recibe' => $entity->getMatriculaRecibe(),
             'matricula_entrega' => $entity->getMatriculaEntrega(),
             'fecha' => $entity->getFecha(),
@@ -76,7 +77,7 @@ class MySQLMovimientoRepository implements MovimientoRepositoryInterface
         ]);
     }
 
-    public function obtenerPorId($id_bien)
+    public function obtenerPorId($id_movimiento)
     {
         $stmt = $this->pdo->prepare("SELECT * FROM {$this->table} WHERE id_movimiento = :id_movimiento");
         $stmt->execute(['id_movimiento' => $id_movimiento]);
@@ -92,8 +93,7 @@ class MySQLMovimientoRepository implements MovimientoRepositoryInterface
 
     public function eliminar($id)
     {
-        $stmt = $this->pdo->prepare("DELETE FROM {$this->table} WHERE id_bien = :id_bien");
+        $stmt = $this->pdo->prepare("DELETE FROM {$this->table} WHERE id_movimiento = :id_movimiento");
         return $stmt->execute(['id_movimiento' => $id]);
     }
-
 }
