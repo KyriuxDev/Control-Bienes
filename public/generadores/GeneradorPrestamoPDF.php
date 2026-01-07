@@ -55,6 +55,43 @@ class GeneradorPrestamoPDF {
         return $dia . " de " . $mesTexto . " de " . $anio;
     }
     
+    /**
+     * Obtiene todas las naturalezas únicas de los bienes
+     */
+    private function obtenerNaturalezasUnicas($bienes) {
+        $naturalezas = array();
+        foreach ($bienes as $item) {
+            $naturaleza = $item['bien']->getNaturaleza();
+            if (!in_array($naturaleza, $naturalezas)) {
+                $naturalezas[] = $naturaleza;
+            }
+        }
+        return $naturalezas;
+    }
+    
+    /**
+     * Marca (subraya) todas las casillas de naturaleza presentes en los bienes
+     */
+    private function marcarCasillasNaturaleza($naturalezas) {
+        $coords = array(
+            'BC' => array(3, 231),
+            'BMC' => array(3, 235),
+            'BMNC' => array(108, 231),
+            'BPS' => array(108, 235)
+        );
+        
+        $this->pdf->SetFillColor(173, 216, 230);
+        $this->pdf->SetAlpha(0.4);
+        
+        foreach ($naturalezas as $naturaleza) {
+            if (isset($coords[$naturaleza])) {
+                $this->pdf->Rect($coords[$naturaleza][0], $coords[$naturaleza][1], 13, 3, 'F');
+            }
+        }
+        
+        $this->pdf->SetAlpha(1.0);
+    }
+    
     public function generar($trabajador, $bienes, $datosAdicionales, $rutaSalida) {
         $this->pdf = new Fpdi();
         $this->pdf->setPrintHeader(false); 
@@ -68,7 +105,8 @@ class GeneradorPrestamoPDF {
         
         $this->llenarDatos($trabajador, $bienes, $datosAdicionales);
 
-        if (count($bienes) > 10) {
+        // Generar anexo si hay MÁS DE 22 bienes
+        if (count($bienes) > 22) {
             $this->generarAnexo($trabajador, $bienes, $datosAdicionales);
         }
 
@@ -89,35 +127,38 @@ class GeneradorPrestamoPDF {
         
         // DÍAS DE PRÉSTAMO (después del segundo "Coordinación de Informática")
         if (isset($datosAdicionales['dias_prestamo']) && $datosAdicionales['dias_prestamo'] > 0) {
-            $this->pdf->SetFont('helvetica', '', 8); // Negrita tamaño 8
-            $this->pdf->SetXY(86, 167); // Justo debajo del departamento
+            $this->pdf->SetFont('helvetica', 'B', 8);
+            $this->pdf->SetXY(86, 167);
             $diasTexto = $datosAdicionales['dias_prestamo'] . ' día' . ($datosAdicionales['dias_prestamo'] != 1 ? 's' : '');
             $this->pdf->Write(5, $diasTexto);
-            $this->pdf->SetFont('helvetica', '', 8); // Restaurar fuente normal
-        }
-        
-
-        // NATURALEZA Y CANTIDAD
-        if (!empty($bienes)) {
-            $naturaleza = $bienes[0]['bien']->getNaturaleza();
-            $this->pdf->SetXY(77, 51); 
-            $this->pdf->Write(10, $naturaleza);
-            $this->marcarCasillaNaturaleza($naturaleza);
+            $this->pdf->SetFont('helvetica', '', 8);
         }
 
+        // CANTIDAD TOTAL
         $cantidadTotal = 0;
         foreach($bienes as $b) {
             $cantidadTotal += isset($b['cantidad']) ? $b['cantidad'] : 1;
         }
         $this->pdf->SetXY(26, 51); 
         $this->pdf->Write(10, $cantidadTotal);
+        
+        // NATURALEZA (mostrar la primera o más común)
+        if (!empty($bienes)) {
+            $naturalezaPrincipal = $bienes[0]['bien']->getNaturaleza();
+            $this->pdf->SetXY(77, 51); 
+            $this->pdf->Write(10, $naturalezaPrincipal);
+        }
+
+        // MARCAR TODAS LAS NATURALEZAS ÚNICAS
+        $naturalezasUnicas = $this->obtenerNaturalezasUnicas($bienes);
+        $this->marcarCasillasNaturaleza($naturalezasUnicas);
 
         // ESTADO DE LOS BIENES
         $estado = isset($datosAdicionales['estado_general']) ? $datosAdicionales['estado_general'] : 'Bueno';
         $this->pdf->SetXY(68, 153);
         $this->pdf->Write(10, $estado);
 
-        // DESCRIPCIONES DE BIENES (lado derecho, máximo 10 en primera página)
+        // DESCRIPCIONES DE BIENES (lado derecho, máximo 22 en primera página)
         $this->escribirDescripcionesBienes($bienes);
 
         // FIRMAS - Primera página
@@ -153,41 +194,35 @@ class GeneradorPrestamoPDF {
         $this->pdf->SetFont('helvetica', '', 8);
         $yPos = 54;
         
-        if (count($bienes) > 10) {
+        if (count($bienes) > 22) {
             $this->pdf->SetXY(120, $yPos);
             $this->pdf->Write(5, 'Ver Anexo Adjunto (' . count($bienes) . ' partidas)');
             return;
         }
 
-        // Mostrar hasta 10 bienes
-        foreach (array_slice($bienes, 0, 10) as $item) {
+        // Mostrar hasta 22 bienes
+        foreach (array_slice($bienes, 0, 22) as $item) {
             $bien = $item['bien'];
+            $cantidad = isset($item['cantidad']) ? $item['cantidad'] : 1;
+            
+            // Construir línea con cantidad y descripción
             $descripcion = $bien->getDescripcion();
             
+            // Si hay más de 1, mostrar cantidad entre paréntesis
+            if ($cantidad > 1) {
+                $linea = "(" . $cantidad . ") " . $descripcion;
+            } else {
+                $linea = $descripcion;
+            }
+            
             // Limitar descripción a 45 caracteres
-            if (strlen($descripcion) > 45) {
-                $descripcion = substr($descripcion, 0, 42) . '...';
+            if (strlen($linea) > 45) {
+                $linea = substr($linea, 0, 42) . '...';
             }
             
             $this->pdf->SetXY(120, $yPos);
-            $this->pdf->Write(5, $descripcion);
+            $this->pdf->Write(5, $linea);
             $yPos += 4;
-        }
-    }
-
-    private function marcarCasillaNaturaleza($naturaleza) {
-        $coords = array(
-            'BC' => array(3, 231),
-            'BMC' => array(3, 235),
-            'BMNC' => array(108, 231),
-            'BPS' => array(108, 235)
-        );
-        
-        if (isset($coords[$naturaleza])) {
-            $this->pdf->SetFillColor(173, 216, 230);
-            $this->pdf->SetAlpha(0.4);
-            $this->pdf->Rect($coords[$naturaleza][0], $coords[$naturaleza][1], 13, 3, 'F');
-            $this->pdf->SetAlpha(1.0);
         }
     }
 

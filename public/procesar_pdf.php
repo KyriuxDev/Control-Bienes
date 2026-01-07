@@ -1,5 +1,5 @@
 <?php
-// public/procesar_pdf.php - VERSIÓN CON COMBINACIÓN DE MÚLTIPLES FORMATOS EN UN SOLO PDF
+// public/procesar_pdf.php - VERSIÓN CORREGIDA CON ESTADO Y SUJETO A DEVOLUCIÓN
 session_start();
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/generadores/GeneradorResguardoPDF.php';
@@ -50,7 +50,7 @@ try {
         throw new Exception("Error: Trabajadores no encontrados");
     }
     
-    // Preparar bienes
+    // Preparar bienes CON TODOS LOS DATOS
     $bienesSeleccionados = array();
     foreach ($_POST['bienes'] as $item) {
         if (empty($item['id_bien'])) continue;
@@ -59,7 +59,9 @@ try {
         if ($bienObj) {
             $bienesSeleccionados[] = array(
                 'bien' => $bienObj,
-                'cantidad' => isset($item['cantidad']) ? $item['cantidad'] : 1
+                'cantidad' => isset($item['cantidad']) ? intval($item['cantidad']) : 1,
+                'estado_fisico' => isset($item['estado_fisico']) ? $item['estado_fisico'] : '',
+                'sujeto_devolucion' => isset($item['sujeto_devolucion']) ? intval($item['sujeto_devolucion']) : 0
             );
         }
     }
@@ -67,6 +69,19 @@ try {
     if (empty($bienesSeleccionados)) {
         throw new Exception("Debe seleccionar al menos un bien");
     }
+    
+    // Obtener estado general (del primer bien o por defecto)
+    $estadoGeneral = 'Bueno';
+    if (!empty($bienesSeleccionados) && !empty($bienesSeleccionados[0]['estado_fisico'])) {
+        $estadoGeneral = $bienesSeleccionados[0]['estado_fisico'];
+    }
+    
+    // Debug logging
+    error_log("=== DEBUG PROCESAR PDF ===");
+    error_log("Bienes seleccionados: " . count($bienesSeleccionados));
+    error_log("Estado general: " . $estadoGeneral);
+    error_log("Primer bien - Estado: " . (isset($bienesSeleccionados[0]['estado_fisico']) ? $bienesSeleccionados[0]['estado_fisico'] : 'NO DEFINIDO'));
+    error_log("Primer bien - Sujeto devolución: " . (isset($bienesSeleccionados[0]['sujeto_devolucion']) ? $bienesSeleccionados[0]['sujeto_devolucion'] : 'NO DEFINIDO'));
     
     // Generar cada tipo de documento seleccionado
     foreach ($tiposMovimiento as $tipoMovimiento) {
@@ -84,14 +99,14 @@ try {
         $movimientoRepo->persist($movimiento);
         $idMovimiento = $movimiento->getIdMovimiento();
         
-        // 2. Crear detalles para este movimiento
+        // 2. Crear detalles para este movimiento CON TODOS LOS DATOS
         foreach ($_POST['bienes'] as $item) {
             if (empty($item['id_bien'])) continue;
             
             $detalle = new Detalle_Movimiento();
             $detalle->setIdMovimiento($idMovimiento)
                    ->setIdBien($item['id_bien'])
-                   ->setCantidad(isset($item['cantidad']) ? $item['cantidad'] : 1)
+                   ->setCantidad(isset($item['cantidad']) ? intval($item['cantidad']) : 1)
                    ->setEstadoFisico(isset($item['estado_fisico']) ? $item['estado_fisico'] : '')
                    ->setSujetoDevolucion(isset($item['sujeto_devolucion']) ? 1 : 0);
             
@@ -111,23 +126,23 @@ try {
             'responsable_control_administrativo' => $trabajadorEntrega->getNombre(),
             'matricula_administrativo' => $trabajadorEntrega->getMatricula(),
             'matricula_coordinacion' => $trabajadorRecibe->getMatricula(),
+            'estado_general' => $estadoGeneral,
             // Datos adicionales para Préstamo y Constancia de Salida
             'dias_prestamo' => isset($_POST['dias_prestamo']) ? intval($_POST['dias_prestamo']) : null,
-            'fecha_devolucion_prestamo' => isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : null,
-            'devolucion' => 'no' // Por defecto NO, se puede modificar si hay checkbox
+            'fecha_devolucion_prestamo' => isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : null
         );
         
-        // Log para debug (solo en desarrollo)
-        error_log("Datos adicionales para {$tipoMovimiento}: " . print_r($datosAdicionales, true));
-        
         // 4. Generar PDF temporal
+        $directorioBase = __DIR__ . '/pdfs';
+        
+        // Asegurar que existe el directorio base
+        if (!file_exists($directorioBase)) {
+            mkdir($directorioBase, 0775, true);
+        }
+        
         $nombreArchivo = strtolower(str_replace(' ', '_', $tipoMovimiento)) . '_' . 
                          time() . '_' . uniqid() . '.pdf';
-        $rutaTemporal = __DIR__ . '/pdfs/' . $nombreArchivo;
-        
-        if (!file_exists(__DIR__ . '/pdfs')) {
-            mkdir(__DIR__ . '/pdfs', 0775, true);
-        }
+        $rutaTemporal = $directorioBase . '/' . $nombreArchivo;
         
         // Seleccionar generador según el tipo
         if ($tipoMovimiento === 'Resguardo') {
@@ -166,31 +181,79 @@ try {
         });
     } else {
         // Si hay múltiples archivos, combinarlos en un solo PDF
+        error_log("=== COMBINANDO MÚLTIPLES PDFs ===");
+        error_log("Número de archivos a combinar: " . count($archivosTemporales));
+        
         $pdfCombinado = new Fpdi();
         $pdfCombinado->setPrintHeader(false);
         $pdfCombinado->setPrintFooter(false);
         
         foreach ($archivosTemporales as $archivo) {
-            // Obtener el número de páginas del PDF
-            $numPaginas = $pdfCombinado->setSourceFile($archivo['ruta']);
+            error_log("Procesando archivo: " . $archivo['ruta']);
             
-            // Importar cada página
-            for ($i = 1; $i <= $numPaginas; $i++) {
-                $pdfCombinado->AddPage();
-                $templateId = $pdfCombinado->importPage($i);
-                $pdfCombinado->useTemplate($templateId, 0, 0, null, null, true);
+            if (!file_exists($archivo['ruta'])) {
+                error_log("ERROR: Archivo no existe: " . $archivo['ruta']);
+                continue;
+            }
+            
+            try {
+                // Obtener el número de páginas del PDF
+                $numPaginas = $pdfCombinado->setSourceFile($archivo['ruta']);
+                error_log("Archivo tiene $numPaginas páginas");
+                
+                // Importar cada página
+                for ($i = 1; $i <= $numPaginas; $i++) {
+                    $pdfCombinado->AddPage();
+                    $templateId = $pdfCombinado->importPage($i);
+                    $pdfCombinado->useTemplate($templateId, 0, 0, null, null, true);
+                }
+            } catch (Exception $e) {
+                error_log("ERROR al procesar archivo: " . $e->getMessage());
             }
         }
         
-        // Guardar PDF combinado
-        $nombreCombinado = 'documentos_' . $folio . '_' . time() . '.pdf';
-        $rutaCombinada = __DIR__ . '/pdfs/' . $nombreCombinado;
-        $pdfCombinado->Output($rutaCombinada, 'F');
+        // Guardar PDF combinado - RUTA SIMPLE SIN SUBDIRECTORIOS
+        $directorioBase = __DIR__ . '/pdfs';
+        
+        // Limpiar el folio para usarlo como nombre de archivo (sin barras)
+        $folioLimpio = str_replace('/', '_', $folio);
+        $nombreCombinado = 'docs_' . $folioLimpio . '_' . time() . '.pdf';
+        
+        // Usar ruta absoluta real
+        $rutaAbsoluta = realpath($directorioBase);
+        if ($rutaAbsoluta === false) {
+            throw new Exception("No se puede obtener la ruta absoluta de: " . $directorioBase);
+        }
+        
+        $rutaCombinada = $rutaAbsoluta . '/' . $nombreCombinado;
+        
+        error_log("Guardando PDF combinado en: " . $rutaCombinada);
+        error_log("Directorio existe: " . (file_exists($rutaAbsoluta) ? 'SI' : 'NO'));
+        error_log("Directorio escribible: " . (is_writable($rutaAbsoluta) ? 'SI' : 'NO'));
+        
+        // Intentar guardar
+        try {
+            $pdfCombinado->Output($rutaCombinada, 'F');
+            error_log("PDF combinado guardado exitosamente");
+        } catch (Exception $e) {
+            error_log("ERROR al guardar PDF: " . $e->getMessage());
+            throw new Exception("Error al guardar PDF combinado: " . $e->getMessage());
+        }
+        
+        if (!file_exists($rutaCombinada)) {
+            throw new Exception("El archivo PDF no se creó correctamente en: " . $rutaCombinada);
+        }
         
         // Descargar PDF combinado
+        error_log("Enviando archivo al navegador: " . basename($rutaCombinada));
+        
         header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="Documentos_' . $folio . '.pdf"');
+        header('Content-Disposition: attachment; filename="Documentos_' . $folioLimpio . '.pdf"');
         header('Content-Length: ' . filesize($rutaCombinada));
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
         readfile($rutaCombinada);
         
         // Limpiar archivos temporales

@@ -55,6 +55,55 @@ class GeneradorSalidaPDF {
         return $dia . " de " . $mesTexto . " de " . $anio;
     }
     
+    /**
+     * Obtiene todas las naturalezas únicas de los bienes
+     */
+    private function obtenerNaturalezasUnicas($bienes) {
+        $naturalezas = array();
+        foreach ($bienes as $item) {
+            $naturaleza = $item['bien']->getNaturaleza();
+            if (!in_array($naturaleza, $naturalezas)) {
+                $naturalezas[] = $naturaleza;
+            }
+        }
+        return $naturalezas;
+    }
+    
+    /**
+     * Marca (subraya) todas las casillas de naturaleza presentes en los bienes
+     */
+    private function marcarCasillasNaturaleza($naturalezas) {
+        $coords = array(
+            'BC' => array(14, 232),
+            'BMC' => array(14, 241),
+            'BMNC' => array(112, 232),
+            'BPS' => array(112, 241)
+        );
+        
+        $this->pdf->SetFillColor(173, 216, 230);
+        $this->pdf->SetAlpha(0.5);
+        
+        foreach ($naturalezas as $naturaleza) {
+            if (isset($coords[$naturaleza])) {
+                $this->pdf->Rect($coords[$naturaleza][0], $coords[$naturaleza][1], 15, 5, 'F');
+            }
+        }
+        
+        $this->pdf->SetAlpha(1.0);
+    }
+    
+    /**
+     * Verifica si algún bien tiene sujeto_devolucion = 1
+     */
+    private function tieneSujetoDevolucion($bienes) {
+        foreach ($bienes as $item) {
+            if (isset($item['sujeto_devolucion']) && $item['sujeto_devolucion'] == 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     public function generar($trabajador, $bienes, $datosAdicionales, $rutaSalida) {
         $this->pdf = new Fpdi();
         $this->pdf->setPrintHeader(false); 
@@ -67,6 +116,7 @@ class GeneradorSalidaPDF {
         
         $this->llenarDatos($trabajador, $bienes, $datosAdicionales);
 
+        // Generar anexo si hay MÁS DE 5 bienes
         if (count($bienes) > 5) {
             $this->generarAnexo($trabajador, $bienes, $datosAdicionales);
         }
@@ -118,45 +168,59 @@ class GeneradorSalidaPDF {
         }
         $this->pdf->SetXY(30, 95);
         $this->pdf->Write(10, $cantidadTotal);
-
-        // NATURALEZA DE LOS BIENES (del primer bien)
+        
+        // NATURALEZA (mostrar la primera o más común)
         if (!empty($bienes)) {
-            $naturaleza = $bienes[0]['bien']->getNaturaleza();
+            $naturalezaPrincipal = $bienes[0]['bien']->getNaturaleza();
             $this->pdf->SetXY(65, 95);
-            $this->pdf->Write(10, $naturaleza);
-            $this->marcarCasillaNaturaleza($naturaleza);
+            $this->pdf->Write(10, $naturalezaPrincipal);
         }
+
+        // MARCAR TODAS LAS NATURALEZAS ÚNICAS
+        $naturalezasUnicas = $this->obtenerNaturalezasUnicas($bienes);
+        $this->marcarCasillasNaturaleza($naturalezasUnicas);
 
         // PROPÓSITO DEL BIEN
         $proposito = isset($datosAdicionales['proposito']) ? $datosAdicionales['proposito'] : 'Uso institucional';
         $this->pdf->SetXY(42, 129);
         $this->pdf->Write(10, $proposito);
 
-        // ESTADO DE LOS BIENES
-        $estado = isset($datosAdicionales['estado_general']) ? $datosAdicionales['estado_general'] : 'Bueno';
+        // ESTADO DE LOS BIENES - Obtener el estado del primer bien o usar el general
+        $estadoMostrar = 'Bueno'; // Por defecto
+        
+        // Prioridad 1: Estado general si existe
+        if (isset($datosAdicionales['estado_general']) && !empty($datosAdicionales['estado_general'])) {
+            $estadoMostrar = $datosAdicionales['estado_general'];
+        } 
+        // Prioridad 2: Estado del primer bien si existe
+        else if (!empty($bienes) && isset($bienes[0]['estado_fisico']) && !empty($bienes[0]['estado_fisico'])) {
+            $estadoMostrar = $bienes[0]['estado_fisico'];
+        }
+        
         $this->pdf->SetXY(115, 137);
-        $this->pdf->Write(10, $estado);
+        $this->pdf->Write(10, $estadoMostrar);
 
-        // DEVOLUCIÓN (SI/NO)
-        $devolucion = isset($datosAdicionales['devolucion']) ? $datosAdicionales['devolucion'] : 'no';
-        if ($devolucion == 'si') {
+        // DEVOLUCIÓN (SI/NO) - Verificar si algún bien tiene sujeto_devolucion
+        $tieneSujetoDevolucion = $this->tieneSujetoDevolucion($bienes);
+        
+        if ($tieneSujetoDevolucion) {
+            // Marcar SÍ
             $this->pdf->SetXY(77, 144);
             $this->pdf->Write(15, 'X');
             
             // FECHA DE DEVOLUCIÓN FORMATEADA (debajo de los días)
             if (isset($datosAdicionales['fecha_devolucion_prestamo']) && !empty($datosAdicionales['fecha_devolucion_prestamo'])) {
                 $fechaDevolucionFormateada = $this->generarTextoFechaCorta($datosAdicionales['fecha_devolucion_prestamo']);
-                $this->pdf->SetFont('helvetica', '', 7); // Tamaño más pequeño
-                $this->pdf->SetXY(111 , 149); // Debajo de los días
+                $this->pdf->SetFont('helvetica', '', 7);
+                $this->pdf->SetXY(111, 149);
                 $this->pdf->Write(5, $fechaDevolucionFormateada);
-                $this->pdf->SetFont('helvetica', '', 8); // Restaurar fuente normal
+                $this->pdf->SetFont('helvetica', '', 9);
             }
         } else {
+            // Marcar NO
             $this->pdf->SetXY(92, 144);
             $this->pdf->Write(15, 'X');
         }
-
-        
 
         // DESCRIPCIONES DE BIENES
         $this->escribirDescripcionesBienes($bienes);
@@ -198,31 +262,25 @@ class GeneradorSalidaPDF {
         $primeros = array_slice($bienes, 0, 5);
         foreach ($primeros as $item) {
             $bien = $item['bien'];
+            $cantidad = isset($item['cantidad']) ? $item['cantidad'] : 1;
+            
+            // Construir línea con cantidad y descripción
             $descripcion = $bien->getDescripcion();
             
-            if (strlen($descripcion) > 50) {
-                $descripcion = substr($descripcion, 0, 47) . '...';
+            // Si hay más de 1, mostrar cantidad entre paréntesis
+            if ($cantidad > 1) {
+                $linea = "(" . $cantidad . ") " . $descripcion;
+            } else {
+                $linea = $descripcion;
+            }
+            
+            if (strlen($linea) > 50) {
+                $linea = substr($linea, 0, 47) . '...';
             }
             
             $this->pdf->SetXY($x, $y);
-            $this->pdf->MultiCell($width, $lineHeight, $descripcion, 0, 'L');
+            $this->pdf->MultiCell($width, $lineHeight, $linea, 0, 'L');
             $y = $this->pdf->GetY();
-        }
-    }
-
-    private function marcarCasillaNaturaleza($naturaleza) {
-        $coords = array(
-            'BC' => array(14, 232),
-            'BMC' => array(14, 241),
-            'BMNC' => array(112, 232),
-            'BPS' => array(112, 241)
-        );
-        
-        if (isset($coords[$naturaleza])) {
-            $this->pdf->SetFillColor(173, 216, 230);
-            $this->pdf->SetAlpha(0.5);
-            $this->pdf->Rect($coords[$naturaleza][0], $coords[$naturaleza][1], 15, 5, 'F');
-            $this->pdf->SetAlpha(1.0);
         }
     }
 
@@ -243,18 +301,31 @@ class GeneradorSalidaPDF {
         $this->pdf->SetFillColor(235, 235, 235);
         $this->pdf->SetFont('helvetica', '', 8);
         
-        $w = array(15, 65, 34, 33, 33);
+        $w = array(15, 50, 25, 25, 25, 40);
         
         $this->pdf->Cell($w[0], 7, 'CANT.', 1, 0, 'C', 1);
         $this->pdf->Cell($w[1], 7, 'DESCRIPCIÓN', 1, 0, 'C', 1);
         $this->pdf->Cell($w[2], 7, 'MARCA', 1, 0, 'C', 1);
         $this->pdf->Cell($w[3], 7, 'MODELO', 1, 0, 'C', 1);
-        $this->pdf->Cell($w[4], 7, 'SERIE', 1, 1, 'C', 1);
+        $this->pdf->Cell($w[4], 7, 'SERIE', 1, 0, 'C', 1);
+        $this->pdf->Cell($w[5], 7, 'ESTADO / DEVOLUCIÓN', 1, 1, 'C', 1);
 
         $this->pdf->SetFont('helvetica', '', 7);
         foreach ($bienes as $item) {
             $bien = $item['bien'];
             $cant = isset($item['cantidad']) ? $item['cantidad'] : '1';
+            
+            // Estado físico
+            $estado = isset($item['estado_fisico']) && !empty($item['estado_fisico']) 
+                ? $item['estado_fisico'] 
+                : 'Bueno';
+            
+            // Sujeto a devolución
+            $devolucion = (isset($item['sujeto_devolucion']) && $item['sujeto_devolucion'] == 1) 
+                ? 'SÍ' 
+                : 'NO';
+            
+            $estadoCompleto = $estado . " / Dev: " . $devolucion;
 
             $nb = $this->pdf->getNumLines($bien->getDescripcion(), $w[1]);
             $h = 5 * $nb;
@@ -264,7 +335,8 @@ class GeneradorSalidaPDF {
             $this->pdf->MultiCell($w[1], $h, $bien->getDescripcion(), 1, 'L', 0, 0);
             $this->pdf->MultiCell($w[2], $h, $bien->getMarca(), 1, 'L', 0, 0);
             $this->pdf->MultiCell($w[3], $h, $bien->getModelo(), 1, 'L', 0, 0);
-            $this->pdf->MultiCell($w[4], $h, $bien->getSerie(), 1, 'L', 0, 1);
+            $this->pdf->MultiCell($w[4], $h, $bien->getSerie(), 1, 'L', 0, 0);
+            $this->pdf->MultiCell($w[5], $h, $estadoCompleto, 1, 'L', 0, 1);
         }
 
         // FIRMAS
