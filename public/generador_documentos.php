@@ -344,13 +344,13 @@ require __DIR__ . '/layouts/head.php';
 
                 <!-- Lista de Bienes -->
                 <div class="p-6">
-                    <div id="contenedor-bienes" class="space-y-3">
+                   <div id="contenedor-bienes" class="space-y-3">
                         <div class="bien-row flex gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 items-start hover:shadow-md transition-shadow">
                             <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 text-primary flex-shrink-0 mt-1">
                                 <span class="material-symbols-outlined">inventory</span>
                             </div>
                             <div class="flex-grow space-y-3">
-                                <select name="bienes[0][id_bien]" class="w-full rounded-lg border-gray-300 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
+                                <select name="bienes[0][id_bien]" class="bien-select w-full rounded-lg border-gray-300 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
                                     <option value="">-- Seleccionar Bien --</option>
                                     <?php foreach($bienesCatalogo as $b): ?>
                                         <option value="<?php echo $b->id_bien; ?>">
@@ -362,30 +362,35 @@ require __DIR__ . '/layouts/head.php';
                                     <div class="flex items-center gap-2">
                                         <label class="text-xs font-bold text-gray-500 whitespace-nowrap">Cantidad:</label>
                                         <input type="number" 
-                                               name="bienes[0][cantidad]" 
-                                               value="1" 
-                                               min="1" 
-                                               class="w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm">
+                                            name="bienes[0][cantidad]" 
+                                            value="1" 
+                                            min="1" 
+                                            class="w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm">
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <label class="text-xs font-bold text-gray-500 whitespace-nowrap">Estado:</label>
                                         <input type="text" 
-                                               name="bienes[0][estado_fisico]" 
-                                               placeholder="Ej. Bueno"
-                                               class="w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm">
+                                            name="bienes[0][estado_fisico]" 
+                                            placeholder="Ej. Bueno"
+                                            class="w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm">
                                     </div>
                                     <div class="flex items-center gap-2 constancia-only hidden">
                                         <label class="text-xs font-bold text-gray-500 whitespace-nowrap flex items-center gap-1">
                                             <input type="checkbox" 
-                                                   name="bienes[0][sujeto_devolucion]" 
-                                                   value="1"
-                                                   class="rounded border-gray-300 text-primary focus:ring-primary">
+                                                name="bienes[0][sujeto_devolucion]" 
+                                                value="1"
+                                                class="rounded border-gray-300 text-primary focus:ring-primary">
                                             Sujeto a devolución
                                         </label>
                                     </div>
                                 </div>
                             </div>
+                            <button type="button" onclick="eliminarFilaBien(this)" class="text-red-500 hover:bg-red-50 p-2 rounded-lg mt-1">
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
                         </div>
+                    </div>
+
                     </div>
                     
                     <div class="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg dark:bg-blue-900/20">
