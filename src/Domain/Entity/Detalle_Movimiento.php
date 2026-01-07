@@ -10,13 +10,12 @@ class Detalle_Movimiento{
     public $estado_fisico;
     public $sujeto_devolucion;
 
-
     public function getIdMovimiento(){
         return $this->id_movimiento;
     }
 
-    public function setIdMovimiento($id_moviento){
-        $this->id_moviento = $id_movimiento;
+    public function setIdMovimiento($id_movimiento){
+        $this->id_movimiento = $id_movimiento;
         return $this;
     }
 

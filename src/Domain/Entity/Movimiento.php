@@ -18,8 +18,8 @@ class Movimiento{
         return $this->id_movimiento;
     }
 
-    public function setIdMovimiento($id_moviento){
-        $this->id_moviento = $id_movimiento;
+    public function setIdMovimiento($id_movimiento){
+        $this->id_movimiento = $id_movimiento;
         return $this;
     }
 
@@ -94,5 +94,4 @@ class Movimiento{
         $this->dias_prestamo = $dias_prestamo;
         return $this;
     }
-
 }
