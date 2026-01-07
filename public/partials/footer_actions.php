@@ -17,7 +17,6 @@
             </button>
             <button type="submit" 
                     form="document-form"
-                    onclick="document.querySelector('form').submit()"
                     class="inline-flex items-center px-6 py-2 text-sm font-bold text-white bg-primary rounded-lg shadow-sm hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transform transition hover:scale-[1.02]">
                 <span class="material-symbols-outlined text-[20px] mr-2">save_as</span>
                 Generar Documento PDF

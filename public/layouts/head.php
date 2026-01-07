@@ -48,6 +48,7 @@
             overflow-x: hidden;
             overflow-y: visible !important;
         }
+        
         .custom-scrollbar::-webkit-scrollbar {
             height: 8px;
             width: 8px;
@@ -63,6 +64,15 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #a8a8a8;
         }
+        
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }

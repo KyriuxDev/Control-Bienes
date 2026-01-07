@@ -18,10 +18,7 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
 require __DIR__ . '/layouts/head.php';
 ?>
 
-
-
 <body class="bg-background-light dark:bg-background-dark text-imss-dark dark:text-white font-display antialiased overflow-x-hidden flex flex-col min-h-screen">
-
 
 <?php require __DIR__ . '/layouts/topnav.php'; ?>
 
@@ -45,10 +42,8 @@ require __DIR__ . '/layouts/head.php';
         </div>
     </div>
 
-   
-
     <!-- Form Content -->
-    <form action="procesar_pdf.php" method="POST" class="space-y-8 mt-2">
+    <form id="document-form" action="procesar_pdf.php" method="POST" class="space-y-8 mt-2">
         
         <!-- SECTION 1: DATOS GENERALES -->
         <section id="general" class="scroll-mt-32">
@@ -410,13 +405,15 @@ require __DIR__ . '/layouts/head.php';
 </main>
 
 <?php require __DIR__ . '/partials/footer_actions.php'; ?>
+<?php require __DIR__ . '/partials/modal_bien.php'; ?>
+<?php require __DIR__ . '/partials/modal_trabajador.php'; ?>
+
 <script>
     window.APP_DATA = {
         bienesCatalogo: <?php echo json_encode($bienesCatalogo); ?>
     };
 </script>
 <?php require __DIR__ . '/layouts/scripts.php'; ?>
-
 
 </body>
 </html>

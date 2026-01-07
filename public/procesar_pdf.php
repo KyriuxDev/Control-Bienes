@@ -1,5 +1,5 @@
 <?php
-// public/procesar_pdf.php - ACTUALIZADO PARA NUEVA BASE DE DATOS
+// public/procesar_pdf.php - CORREGIDO
 session_start();
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/generadores/GeneradorResguardoPDF.php';
@@ -43,6 +43,8 @@ try {
     // 2. CREAR DETALLES (BIENES)
     $bienesSeleccionados = array();
     foreach ($_POST['bienes'] as $item) {
+        if (empty($item['id_bien'])) continue; // Skip empty rows
+        
         $bienObj = $bienRepo->obtenerPorId($item['id_bien']);
         if ($bienObj) {
             // Guardar detalle en BD
@@ -63,6 +65,11 @@ try {
         }
     }
     
+    // Verificar que haya al menos un bien
+    if (empty($bienesSeleccionados)) {
+        throw new Exception("Debe seleccionar al menos un bien");
+    }
+    
     // Commit de la transacción
     $pdo->commit();
     
@@ -75,16 +82,21 @@ try {
     }
     
     // 4. PREPARAR DATOS ADICIONALES PARA EL PDF
+    // ✅ CORREGIDO: Ahora están bien asignados
     $datosAdicionales = array(
         'folio' => isset($_POST['folio']) ? $_POST['folio'] : '',
         'lugar_fecha' => $_POST['lugar'] . ', ' . date('d \d\e F \d\e Y', strtotime($_POST['fecha'])),
-        'recibe_resguardo' => $trabajadorEntrega->getNombre(), // Quien entrega
-        'entrega_resguardo' => $trabajadorEntrega->getCargo(), // Su cargo
+        'recibe_resguardo' => $trabajadorRecibe->getNombre(),  // ✅ Quien RECIBE
+        'entrega_resguardo' => $trabajadorEntrega->getNombre(), // ✅ Quien ENTREGA
+        'cargo_entrega' => $trabajadorEntrega->getCargo(),       // ✅ Cargo de quien entrega
         'tipo_documento' => $_POST['tipo_movimiento']
     );
     
     // 5. GENERAR PDF (usando el trabajador que recibe)
-    $rutaSalida = __DIR__ . '/pdfs/' . strtolower(str_replace(' ', '_', $_POST['tipo_movimiento'])) . '_' . time() . '.pdf';
+    $nombreArchivo = strtolower(str_replace(' ', '_', $_POST['tipo_movimiento'])) . '_' . 
+                     preg_replace('/[^a-z0-9_]/', '', strtolower($trabajadorRecibe->getNombre())) . '_' . 
+                     time() . '.pdf';
+    $rutaSalida = __DIR__ . '/pdfs/' . $nombreArchivo;
     
     // Asegurar que existe el directorio
     if (!file_exists(__DIR__ . '/pdfs')) {
@@ -96,15 +108,52 @@ try {
     
     // 6. FORZAR DESCARGA
     header('Content-Type: application/pdf');
-    header('Content-Disposition: attachment; filename="' . basename($rutaSalida) . '"');
+    header('Content-Disposition: attachment; filename="' . $nombreArchivo . '"');
+    header('Content-Length: ' . filesize($rutaSalida));
     readfile($rutaSalida);
-    unlink($rutaSalida); // Borrar temporal
+    
+    // Borrar temporal después de 5 segundos (permite que se complete la descarga)
+    register_shutdown_function(function() use ($rutaSalida) {
+        if (file_exists($rutaSalida)) {
+            sleep(5);
+            @unlink($rutaSalida);
+        }
+    });
     
 } catch (Exception $e) {
     // Rollback en caso de error
-    $pdo->rollBack();
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    
     error_log("ERROR en procesar_pdf.php: " . $e->getMessage());
-    die("Error al procesar el documento: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
+    
+    // Mostrar error al usuario
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Error</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body class="bg-gray-100 flex items-center justify-center min-h-screen">
+        <div class="bg-white p-8 rounded-lg shadow-lg max-w-md">
+            <div class="flex items-center gap-3 text-red-600 mb-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <h1 class="text-xl font-bold">Error al Generar PDF</h1>
+            </div>
+            <p class="text-gray-700 mb-4">' . htmlspecialchars($e->getMessage()) . '</p>
+            <button onclick="window.history.back()" class="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700">
+                Volver al Formulario
+            </button>
+        </div>
+    </body>
+    </html>';
 }
 
 exit;
