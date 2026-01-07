@@ -55,15 +55,16 @@ require __DIR__ . '/layouts/head.php';
                     </h3>
                 </div>
                 <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-                    <!-- Tipo de Documento -->
+                    <!-- Tipo de Documento con Checkboxes -->
                     <div class="col-span-1 md:col-span-2">
-                        <label for="doc-type" class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
-                            Tipo de Documento <span class="text-red-500">*</span>
+                        <label class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-3">
+                            Tipo(s) de Documento <span class="text-red-500">*</span>
+                            <span class="text-xs font-normal text-imss-gray ml-2">(Puede seleccionar uno o más)</span>
                         </label>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <!-- Resguardo -->
                             <label class="relative flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-primary/5 transition-all border-imss-border dark:border-gray-700 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                                <input type="radio" name="tipo_movimiento" value="Resguardo" class="sr-only peer" checked>
+                                <input type="checkbox" name="tipos_movimiento[]" value="Resguardo" class="peer sr-only" onchange="updateConstanciaFields()">
                                 <div class="flex items-center gap-3 w-full">
                                     <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 text-primary peer-checked:bg-primary peer-checked:text-white transition-colors">
                                         <span class="material-symbols-outlined">shield_person</span>
@@ -80,7 +81,7 @@ require __DIR__ . '/layouts/head.php';
 
                             <!-- Préstamo -->
                             <label class="relative flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all border-imss-border dark:border-gray-700 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/20">
-                                <input type="radio" name="tipo_movimiento" value="Prestamo" class="sr-only peer">
+                                <input type="checkbox" name="tipos_movimiento[]" value="Prestamo" class="peer sr-only" onchange="updateConstanciaFields()">
                                 <div class="flex items-center gap-3 w-full">
                                     <div class="flex items-center justify-center size-10 rounded-lg bg-blue-100 text-blue-600 peer-checked:bg-blue-500 peer-checked:text-white transition-colors dark:bg-blue-900/30">
                                         <span class="material-symbols-outlined">swap_horiz</span>
@@ -97,7 +98,7 @@ require __DIR__ . '/layouts/head.php';
 
                             <!-- Constancia de Salida -->
                             <label class="relative flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-all border-imss-border dark:border-gray-700 has-[:checked]:border-orange-500 has-[:checked]:bg-orange-50 dark:has-[:checked]:bg-orange-900/20">
-                                <input type="radio" name="tipo_movimiento" value="Constancia de salida" class="sr-only peer">
+                                <input type="checkbox" name="tipos_movimiento[]" value="Constancia de salida" class="peer sr-only" onchange="updateConstanciaFields()">
                                 <div class="flex items-center gap-3 w-full">
                                     <div class="flex items-center justify-center size-10 rounded-lg bg-orange-100 text-orange-600 peer-checked:bg-orange-500 peer-checked:text-white transition-colors dark:bg-orange-900/30">
                                         <span class="material-symbols-outlined">logout</span>
@@ -112,6 +113,10 @@ require __DIR__ . '/layouts/head.php';
                                 </span>
                             </label>
                         </div>
+                        <p class="mt-2 text-xs text-imss-gray dark:text-gray-400 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">info</span>
+                            Seleccione uno o más formatos para generar simultáneamente
+                        </p>
                     </div>
 
                     <!-- Campo días de préstamo (solo visible si es Préstamo) -->
