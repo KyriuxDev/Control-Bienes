@@ -1,5 +1,5 @@
 <?php
-// public/vista_previa_pdf.php - VERSIÓN MÚLTIPLES FORMATOS
+// public/vista_previa_pdf.php - VERSIÓN MÚLTIPLES FORMATOS CON VALIDACIÓN
 session_start();
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/generadores/GeneradorResguardoPDF.php';
@@ -20,6 +20,11 @@ try {
     // Validar que haya tipos de movimiento seleccionados
     if (!isset($_POST['tipos_movimiento']) || empty($_POST['tipos_movimiento'])) {
         throw new Exception("Debe seleccionar al menos un tipo de documento");
+    }
+    
+    // Validar folio obligatorio (para vista previa también)
+    if (empty($_POST['folio'])) {
+        throw new Exception("El folio es obligatorio");
     }
     
     // Para vista previa, solo mostramos el primer tipo seleccionado

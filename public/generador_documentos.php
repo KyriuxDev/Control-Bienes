@@ -138,16 +138,17 @@ require __DIR__ . '/layouts/head.php';
                     <!-- Folio -->
                     <div class="col-span-1">
                         <label for="folio" class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
-                            Folio del Documento
+                            Folio del Documento <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
                             <input type="text" 
                                    id="folio" 
                                    name="folio" 
                                    placeholder="Ej. 2026/054"
+                                   required
                                    class="block w-full px-3 py-2.5 border-imss-border focus:ring-primary focus:border-primary sm:text-sm rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white shadow-sm">
                         </div>
-                        <p class="mt-1 text-xs text-imss-gray dark:text-gray-500">Ingrese el folio del documento oficial.</p>
+                        <p class="mt-1 text-xs text-imss-gray dark:text-gray-500">Ingrese el folio único del documento.</p>
                     </div>
 
                     <!-- Fecha de Emisión -->
@@ -169,7 +170,7 @@ require __DIR__ . '/layouts/head.php';
                     </div>
 
                     <!-- Lugar -->
-                    <div class="col-span-1 md:col-span-2">
+                    <div class="col-span-1">
                         <label for="lugar" class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
                             Lugar
                         </label>
@@ -180,17 +181,11 @@ require __DIR__ . '/layouts/head.php';
                                class="block w-full px-3 py-2.5 border-imss-border focus:ring-primary focus:border-primary sm:text-sm rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white shadow-sm">
                     </div>
 
-                    <!-- Área -->
-                    <div class="col-span-1 md:col-span-2">
-                        <label for="area" class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
-                            Área o Departamento
-                        </label>
-                        <input type="text" 
-                               id="area" 
-                               name="area" 
-                               placeholder="Ej. Departamento de Sistemas"
-                               class="block w-full px-3 py-2.5 border-imss-border focus:ring-primary focus:border-primary sm:text-sm rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white shadow-sm">
-                    </div>
+                    <!-- Área (Campo oculto con valor fijo) -->
+                    <input type="hidden" 
+                           id="area" 
+                           name="area" 
+                           value="Coordinación de Informática">
                 </div>
             </div>
         </section>

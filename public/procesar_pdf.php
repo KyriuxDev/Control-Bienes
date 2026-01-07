@@ -1,5 +1,5 @@
 <?php
-// public/procesar_pdf.php - VERSIÓN MÚLTIPLES FORMATOS
+// public/procesar_pdf.php - VERSIÓN MÚLTIPLES FORMATOS CON VALIDACIÓN DE FOLIO
 session_start();
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/generadores/GeneradorResguardoPDF.php';
@@ -26,6 +26,21 @@ try {
     // Validar que haya tipos de movimiento seleccionados
     if (!isset($_POST['tipos_movimiento']) || empty($_POST['tipos_movimiento'])) {
         throw new Exception("Debe seleccionar al menos un tipo de documento");
+    }
+    
+    // Validar folio obligatorio
+    if (empty($_POST['folio'])) {
+        throw new Exception("El folio es obligatorio");
+    }
+    
+    // Validar que el folio no exista
+    $folio = trim($_POST['folio']);
+    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM movimiento WHERE folio = :folio");
+    $stmt->execute(['folio' => $folio]);
+    $result = $stmt->fetch();
+    
+    if ($result['total'] > 0) {
+        throw new Exception("El folio '{$folio}' ya está registrado en el sistema. Por favor use uno diferente.");
     }
     
     $tiposMovimiento = $_POST['tipos_movimiento'];
@@ -70,7 +85,7 @@ try {
                    ->setFecha($_POST['fecha'])
                    ->setLugar(isset($_POST['lugar']) ? $_POST['lugar'] : '')
                    ->setArea(isset($_POST['area']) ? $_POST['area'] : '')
-                   ->setFolio(isset($_POST['folio']) ? $_POST['folio'] : '')
+                   ->setFolio($folio)
                    ->setDiasPrestamo(isset($_POST['dias_prestamo']) ? $_POST['dias_prestamo'] : null);
         
         $movimientoRepo->persist($movimiento);
@@ -92,7 +107,7 @@ try {
         
         // 3. Preparar datos para el PDF
         $datosAdicionales = array(
-            'folio' => isset($_POST['folio']) ? $_POST['folio'] : '',
+            'folio' => $folio,
             'lugar_fecha' => $_POST['lugar'] . ', ' . date('d \d\e F \d\e Y', strtotime($_POST['fecha'])),
             'recibe_resguardo' => $trabajadorRecibe->getNombre(),
             'entrega_resguardo' => $trabajadorEntrega->getNombre(),
