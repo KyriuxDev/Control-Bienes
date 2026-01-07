@@ -1,5 +1,5 @@
 <?php
-// public/procesar_pdf.php - VERSIÓN MÚLTIPLES FORMATOS CON FOLIO AUTOMÁTICO
+// public/procesar_pdf.php - VERSIÓN MÚLTIPLES FORMATOS CON FOLIO AUTOMÁTICO Y FECHA CORREGIDA
 session_start();
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/generadores/GeneradorResguardoPDF.php';
@@ -96,13 +96,10 @@ try {
         }
         
         // 3. Preparar datos para el PDF
-        // Corregir problema de zona horaria
-        $fechaSeleccionada = $_POST['fecha'];
-        $timestamp = strtotime($fechaSeleccionada . ' 12:00:00'); // Agregar hora del mediodía para evitar problemas de zona horaria
-        
         $datosAdicionales = array(
             'folio' => $folio,
-            'lugar_fecha' => $_POST['lugar'] . ', ' . date('d \d\e F \d\e Y', $timestamp),
+            'fecha' => $_POST['fecha'], // Fecha en formato YYYY-MM-DD
+            'lugar' => isset($_POST['lugar']) ? $_POST['lugar'] : 'Oaxaca de Juárez, Oaxaca',
             'recibe_resguardo' => $trabajadorRecibe->getNombre(),
             'entrega_resguardo' => $trabajadorEntrega->getNombre(),
             'cargo_entrega' => $trabajadorEntrega->getCargo(),

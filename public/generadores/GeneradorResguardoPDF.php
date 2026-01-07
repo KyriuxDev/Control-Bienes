@@ -13,9 +13,9 @@ class GeneradorResguardoPDF {
     }
     
     /**
-     * Genera la fecha exacta: Oaxaca de Juárez, Oaxaca, 5 de enero de 2026
+     * Genera la fecha exacta usando la fecha recibida del formulario
      */
-    private function generarTextoFecha() {
+    private function generarTextoFecha($fechaStr, $lugar) {
         $meses = array(
             "1" => "enero", "2" => "febrero", "3" => "marzo", 
             "4" => "abril", "5" => "mayo", "6" => "junio", 
@@ -23,12 +23,15 @@ class GeneradorResguardoPDF {
             "10" => "octubre", "11" => "noviembre", "12" => "diciembre"
         );
         
-        $dia = date('j');
-        $mesNumero = date('n');
-        $mesTexto = $meses[$mesNumero];
-        $anio = date('Y');
+        // Parsear la fecha recibida (YYYY-MM-DD)
+        $timestamp = strtotime($fechaStr . ' 12:00:00');
         
-        return "Oaxaca de Juárez, Oaxaca, " . $dia . " de " . $mesTexto . " de " . $anio;
+        $dia = date('j', $timestamp);
+        $mesNumero = date('n', $timestamp);
+        $mesTexto = $meses[$mesNumero];
+        $anio = date('Y', $timestamp);
+        
+        return $lugar . ", " . $dia . " de " . $mesTexto . " de " . $anio;
     }
     
     public function generar($trabajador, $bienes, $datosAdicionales, $rutaSalida) {
@@ -54,8 +57,15 @@ class GeneradorResguardoPDF {
         $this->pdf->SetFont('helvetica', '', 7);
         $this->pdf->SetTextColor(0, 0, 0);
 
-        // FECHA AUTOMÁTICA
-        $fechaFormateada = $this->generarTextoFecha();
+        // FECHA - Usar la fecha del formulario
+        $lugar = isset($datosAdicionales['lugar']) ? $datosAdicionales['lugar'] : 'Oaxaca de Juárez, Oaxaca';
+        
+        if (isset($datosAdicionales['fecha'])) {
+            $fechaFormateada = $this->generarTextoFecha($datosAdicionales['fecha'], $lugar);
+        } else {
+            $fechaFormateada = $this->generarTextoFecha(date('Y-m-d'), $lugar);
+        }
+        
         $this->pdf->SetXY(112, 54.5); 
         $this->pdf->Write(8, $fechaFormateada);
         
@@ -64,11 +74,20 @@ class GeneradorResguardoPDF {
         $this->pdf->Write(10, $datosAdicionales['folio']); 
 
         // DATOS TRABAJADOR
-        $this->pdf->SetXY(55, 72); $this->pdf->Write(8, $trabajador->getInstitucion());
-        $this->pdf->SetXY(55, 76); $this->pdf->Write(8, $trabajador->getNombre()); 
-        $this->pdf->SetXY(55, 80); $this->pdf->Write(8, $trabajador->getCargo()); 
-        $this->pdf->SetXY(55, 84); $this->pdf->Write(8, $trabajador->getAdscripcion());
-        $this->pdf->SetXY(55, 88); $this->pdf->Write(8, $trabajador->getTelefono()); 
+        $this->pdf->SetXY(55, 72); 
+        $this->pdf->Write(8, $trabajador->getInstitucion());
+        
+        $this->pdf->SetXY(55, 76); 
+        $this->pdf->Write(8, $trabajador->getNombre()); 
+        
+        $this->pdf->SetXY(55, 80); 
+        $this->pdf->Write(8, $trabajador->getCargo()); 
+        
+        $this->pdf->SetXY(55, 84); 
+        $this->pdf->Write(8, $trabajador->getAdscripcion());
+        
+        $this->pdf->SetXY(55, 88); 
+        $this->pdf->Write(8, $trabajador->getTelefono()); 
 
         // CUERPO
         if (count($bienes) >= 2) {
@@ -83,8 +102,10 @@ class GeneradorResguardoPDF {
 
             $this->pdf->SetXY(128, 109);
             $this->pdf->Write(5, $bien->getDescripcion());
+            
             $this->pdf->SetXY(128, 115); 
             $this->pdf->Write(8, $bien->getMarca());
+            
             $this->pdf->SetXY(128, 120); 
             $this->pdf->Write(13, $bien->getSerie());
         }
@@ -93,12 +114,14 @@ class GeneradorResguardoPDF {
         // Quien RECIBE (Resguardante - Izquierda)
         $this->pdf->SetXY(28, 228); 
         $this->pdf->Write(8, $trabajador->getNombre()); 
+        
         $this->pdf->SetXY(20, 232); 
         $this->pdf->Write(8, $trabajador->getCargo());
         
         // Quien ENTREGA (Derecha)
         $this->pdf->SetXY(118, 228); 
         $this->pdf->Write(10, $datosAdicionales['entrega_resguardo']);
+        
         $this->pdf->SetXY(111, 232); 
         $this->pdf->Write(10, $datosAdicionales['cargo_entrega']); 
     }
@@ -135,7 +158,9 @@ class GeneradorResguardoPDF {
 
             $nb = $this->pdf->getNumLines($bien->getDescripcion(), $w[1]);
             $h = 5 * $nb;
-            if($h < 7) $h = 7; 
+            if($h < 7) {
+                $h = 7;
+            }
 
             $this->pdf->MultiCell($w[0], $h, $cant, 1, 'C', 0, 0);
             $this->pdf->MultiCell($w[1], $h, $bien->getDescripcion(), 1, 'L', 0, 0);
@@ -158,11 +183,14 @@ class GeneradorResguardoPDF {
         // Columna Izquierda: Resguardante
         $this->pdf->SetXY(15, $yFirmas);
         $this->pdf->Cell(80, 0, '', 'T', 0, 'C');
+        
         $this->pdf->SetXY(15, $yFirmas + 2);
         $this->pdf->Cell(80, 4, "RESGUARDANTE", 0, 1, 'C');
+        
         $this->pdf->SetX(15);
         $this->pdf->SetFont('helvetica', '', 7.5);
         $this->pdf->Cell(80, 4, $trabajador->getNombre(), 0, 1, 'C');
+        
         $this->pdf->SetX(15);
         $this->pdf->SetFont('helvetica', '', 6.5);
         $this->pdf->MultiCell(80, 3, $trabajador->getCargo(), 0, 'C');
@@ -171,14 +199,16 @@ class GeneradorResguardoPDF {
         $this->pdf->SetFont('helvetica', '', 8);
         $this->pdf->SetXY(115, $yFirmas);
         $this->pdf->Cell(80, 0, '', 'T', 0, 'C');
+        
         $this->pdf->SetXY(115, $yFirmas + 2);
         $this->pdf->Cell(80, 4, "ENTREGA", 0, 1, 'C');
+        
         $this->pdf->SetX(115);
         $this->pdf->SetFont('helvetica', '', 7.5);
         $this->pdf->Cell(80, 4, $datosAdicionales['entrega_resguardo'], 0, 1, 'C');
+        
         $this->pdf->SetX(115);
         $this->pdf->SetFont('helvetica', '', 6.5);
-        // ✅ CORREGIDO: Usar cargo_entrega de datosAdicionales
         $cargoEntrega = isset($datosAdicionales['cargo_entrega']) ? $datosAdicionales['cargo_entrega'] : "DEPARTAMENTO DE BIENES Y SUMINISTROS";
         $this->pdf->MultiCell(80, 3, $cargoEntrega, 0, 'C');
     }

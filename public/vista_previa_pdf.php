@@ -1,8 +1,8 @@
 <?php
-// public/vista_previa_pdf.php - VERSIÓN MÚLTIPLES FORMATOS CON FOLIO AUTOMÁTICO
+// public/vista_previa_pdf.php - VERSIÓN MÚLTIPLES FORMATOS CON FOLIO AUTOMÁTICO Y FECHA CORREGIDA
 session_start();
 error_reporting(E_ALL);
-ini_set('display_errors', 0); // No mostrar errores en producción
+ini_set('display_errors', 1); // Activar para ver errores
 ini_set('log_errors', 1);
 
 require_once __DIR__ . '/../vendor/autoload.php';
@@ -59,7 +59,7 @@ try {
     }
     
     // GENERAR FOLIO TEMPORAL PARA VISTA PREVIA
-    $folio = $folioGenerator->generarFolio() . ' (VISTA PREVIA)';
+    $folio = $folioGenerator->generarFolio();
     
     // Para vista previa, solo mostramos el primer tipo seleccionado
     $tipoMovimiento = $_POST['tipos_movimiento'][0];
@@ -103,14 +103,11 @@ try {
         throw new Exception("Debe seleccionar al menos un bien válido");
     }
 
-    // 3. Preparar datos adicionales
-    // Corregir problema de zona horaria
-    $fechaSeleccionada = $_POST['fecha'];
-    $timestamp = strtotime($fechaSeleccionada . ' 12:00:00'); // Agregar hora del mediodía para evitar problemas de zona horaria
-    
+    // 3. Preparar datos adicionales con la fecha del formulario
     $datosAdicionales = array(
         'folio' => $folio,
-        'lugar_fecha' => $_POST['lugar'] . ', ' . date('d \d\e F \d\e Y', $timestamp),
+        'fecha' => $_POST['fecha'], // Fecha en formato YYYY-MM-DD
+        'lugar' => $_POST['lugar'],
         'recibe_resguardo' => $trabajadorRecibe->getNombre(),
         'entrega_resguardo' => $trabajadorEntrega->getNombre(),
         'cargo_entrega' => $trabajadorEntrega->getCargo(),
