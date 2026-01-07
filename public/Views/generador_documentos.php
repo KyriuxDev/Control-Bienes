@@ -106,21 +106,8 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
                 </div>
             </div>
             
-            <!-- Navigation 
-            <nav class="hidden md:flex items-center gap-8">
-                <a href="#" class="text-sm font-medium text-imss-dark hover:text-primary transition-colors dark:text-gray-200 dark:hover:text-primary">Inicio</a>
-                <a href="#" class="text-sm font-medium text-primary border-b-2 border-primary pb-0.5 dark:text-primary">Gestión</a>
-                <a href="#" class="text-sm font-medium text-imss-dark hover:text-primary transition-colors dark:text-gray-200 dark:hover:text-primary">Reportes</a>
-            </nav>
-            -->
-            
             <!-- Actions & Profile-->
-            <!-- 
             <div class="flex items-center gap-4">
-                <button class="flex items-center justify-center size-10 rounded-full hover:bg-imss-border/30 text-imss-dark dark:text-gray-200 transition-colors relative">
-                    <span class="material-symbols-outlined">notifications</span>
-                    <span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-[#1e2a1e]"></span>
-                </button> -->
                 <div class="h-8 w-px bg-imss-border dark:bg-gray-700 mx-1"></div>
                 <div class="flex items-center gap-3">
                     <div class="hidden lg:flex flex-col items-end">
@@ -213,14 +200,15 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
                             Tipo de Documento <span class="text-red-500">*</span>
                         </label>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Resguardo -->
                             <label class="relative flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-primary/5 transition-all border-imss-border dark:border-gray-700 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                                <input type="checkbox" name="docs_a_generar[]" value="resguardo" class="sr-only peer" checked>
+                                <input type="radio" name="tipo_movimiento" value="Resguardo" class="sr-only peer" checked>
                                 <div class="flex items-center gap-3 w-full">
                                     <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 text-primary peer-checked:bg-primary peer-checked:text-white transition-colors">
                                         <span class="material-symbols-outlined">shield_person</span>
                                     </div>
                                     <div class="flex-1">
-                                        <p class="font-bold text-sm text-imss-dark dark:text-white">Resguardo Individual</p>
+                                        <p class="font-bold text-sm text-imss-dark dark:text-white">Resguardo</p>
                                         <p class="text-xs text-imss-gray dark:text-gray-400">Formato CMB-3</p>
                                     </div>
                                 </div>
@@ -228,7 +216,57 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
                                     <span class="material-symbols-outlined text-white text-sm hidden peer-checked:block">check</span>
                                 </span>
                             </label>
+
+                            <!-- Préstamo -->
+                            <label class="relative flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all border-imss-border dark:border-gray-700 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/20">
+                                <input type="radio" name="tipo_movimiento" value="Prestamo" class="sr-only peer">
+                                <div class="flex items-center gap-3 w-full">
+                                    <div class="flex items-center justify-center size-10 rounded-lg bg-blue-100 text-blue-600 peer-checked:bg-blue-500 peer-checked:text-white transition-colors dark:bg-blue-900/30">
+                                        <span class="material-symbols-outlined">swap_horiz</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="font-bold text-sm text-imss-dark dark:text-white">Préstamo</p>
+                                        <p class="text-xs text-imss-gray dark:text-gray-400">Temporal</p>
+                                    </div>
+                                </div>
+                                <span class="absolute top-2 right-2 size-5 rounded-full border-2 border-gray-300 peer-checked:border-blue-500 peer-checked:bg-blue-500 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-white text-sm hidden peer-checked:block">check</span>
+                                </span>
+                            </label>
+
+                            <!-- Constancia de Salida -->
+                            <label class="relative flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-all border-imss-border dark:border-gray-700 has-[:checked]:border-orange-500 has-[:checked]:bg-orange-50 dark:has-[:checked]:bg-orange-900/20">
+                                <input type="radio" name="tipo_movimiento" value="Constancia de salida" class="sr-only peer">
+                                <div class="flex items-center gap-3 w-full">
+                                    <div class="flex items-center justify-center size-10 rounded-lg bg-orange-100 text-orange-600 peer-checked:bg-orange-500 peer-checked:text-white transition-colors dark:bg-orange-900/30">
+                                        <span class="material-symbols-outlined">logout</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="font-bold text-sm text-imss-dark dark:text-white">Constancia Salida</p>
+                                        <p class="text-xs text-imss-gray dark:text-gray-400">Salida de bien</p>
+                                    </div>
+                                </div>
+                                <span class="absolute top-2 right-2 size-5 rounded-full border-2 border-gray-300 peer-checked:border-orange-500 peer-checked:bg-orange-500 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-white text-sm hidden peer-checked:block">check</span>
+                                </span>
+                            </label>
                         </div>
+                    </div>
+
+                    <!-- Campo días de préstamo (solo visible si es Préstamo) -->
+                    <div class="col-span-1 md:col-span-2 hidden" id="dias-prestamo-container">
+                        <label for="dias_prestamo" class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
+                            Días de Préstamo <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="number" 
+                                   id="dias_prestamo" 
+                                   name="dias_prestamo" 
+                                   min="1"
+                                   placeholder="Ej. 15"
+                                   class="block w-full px-3 py-2.5 border-imss-border focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white shadow-sm">
+                        </div>
+                        <p class="mt-1 text-xs text-imss-gray dark:text-gray-500">Ingrese el número de días del préstamo.</p>
                     </div>
 
                     <!-- Folio -->
@@ -239,7 +277,7 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
                         <div class="relative">
                             <input type="text" 
                                    id="folio" 
-                                   name="folio_resguardo" 
+                                   name="folio" 
                                    placeholder="Ej. 2026/054"
                                    class="block w-full px-3 py-2.5 border-imss-border focus:ring-primary focus:border-primary sm:text-sm rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white shadow-sm">
                         </div>
@@ -248,24 +286,44 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
 
                     <!-- Fecha de Emisión -->
                     <div class="col-span-1">
-                        <label for="date" class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
-                            Lugar y Fecha <span class="text-red-500">*</span>
+                        <label for="fecha" class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
+                            Fecha <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <span class="material-symbols-outlined text-imss-gray text-lg">calendar_today</span>
                             </div>
-                            <?php
-                                $meses = array("1"=>"enero", "2"=>"febrero", "3"=>"marzo", "4"=>"abril", "5"=>"mayo", "6"=>"junio", "7"=>"julio", "8"=>"agosto", "9"=>"septiembre", "10"=>"octubre", "11"=>"noviembre", "12"=>"diciembre");
-                                $fecha_formateada = "Oaxaca de Juárez, Oaxaca, " . date('j') . " de " . $meses[date('n')] . " de " . date('Y');
-                            ?>
-                            <input type="text" 
-                                   id="date" 
-                                   name="lugar_fecha_resguardo" 
-                                   value="<?php echo $fecha_formateada; ?>"
-                                   readonly
-                                   class="block w-full pl-10 pr-3 py-2.5 border-imss-border focus:ring-primary focus:border-primary sm:text-sm rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white shadow-sm bg-gray-50 dark:bg-gray-900 cursor-not-allowed">
+                            <input type="date" 
+                                   id="fecha" 
+                                   name="fecha" 
+                                   value="<?php echo date('Y-m-d'); ?>"
+                                   required
+                                   class="block w-full pl-10 pr-3 py-2.5 border-imss-border focus:ring-primary focus:border-primary sm:text-sm rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white shadow-sm">
                         </div>
+                    </div>
+
+                    <!-- Lugar -->
+                    <div class="col-span-1 md:col-span-2">
+                        <label for="lugar" class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
+                            Lugar
+                        </label>
+                        <input type="text" 
+                               id="lugar" 
+                               name="lugar" 
+                               value="Oaxaca de Juárez, Oaxaca"
+                               class="block w-full px-3 py-2.5 border-imss-border focus:ring-primary focus:border-primary sm:text-sm rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white shadow-sm">
+                    </div>
+
+                    <!-- Área -->
+                    <div class="col-span-1 md:col-span-2">
+                        <label for="area" class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
+                            Área o Departamento
+                        </label>
+                        <input type="text" 
+                               id="area" 
+                               name="area" 
+                               placeholder="Ej. Departamento de Sistemas"
+                               class="block w-full px-3 py-2.5 border-imss-border focus:ring-primary focus:border-primary sm:text-sm rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white shadow-sm">
                     </div>
                 </div>
             </div>
@@ -280,36 +338,37 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
                             <span class="material-symbols-outlined text-primary">group</span>
                             Responsables y Firmas
                         </h3>
-                        <p class="text-xs text-imss-gray dark:text-gray-400 mt-0.5">Defina quién resguarda y quién entrega los bienes.</p>
+                        <p class="text-xs text-imss-gray dark:text-gray-400 mt-0.5">Defina quién recibe y quién entrega los bienes.</p>
                     </div>
                     <button type="button" 
                             onclick="toggleModal('modal-trabajador')"
-                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-primary hover:bg-primary-dark 0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent dark:bg-accent dark:hover:bg-accent/80">
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent dark:bg-accent dark:hover:bg-accent/80">
                         <span class="material-symbols-outlined text-lg mr-2">person_add</span>
                         Nuevo Trabajador
                     </button>
                 </div>
                 
                 <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <!-- Columna Resguardante -->
+                    <!-- Columna Quien RECIBE -->
                     <div class="rounded-lg border-2 border-imss-border p-5 bg-blue-50/30 dark:border-gray-700 dark:bg-blue-900/10">
                         <h4 class="text-sm uppercase tracking-wide text-imss-gray font-bold mb-4 flex items-center gap-2">
-                            <span class="size-2 rounded-full bg-blue-500"></span> Resguardante
+                            <span class="size-2 rounded-full bg-blue-500"></span> Quien Recibe
                         </h4>
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
                                     Seleccionar Trabajador <span class="text-red-500">*</span>
                                 </label>
-                                <select name="trabajador_matricula" 
-                                        id="trabajador_matricula" 
+                                <select name="matricula_recibe" 
+                                        id="matricula_recibe" 
                                         class="w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-white" 
                                         required 
-                                        onchange="mostrarDatosTrabajador(this)">
+                                        onchange="mostrarDatosTrabajador(this, 'recibe')">
                                     <option value="">-- Seleccione un trabajador --</option>
                                     <?php foreach($trabajadores as $t): ?>
                                         <option value="<?php echo $t->matricula; ?>" 
                                             data-mat="<?php echo htmlspecialchars($t->matricula); ?>"
+                                            data-nombre="<?php echo htmlspecialchars($t->nombre); ?>"
                                             data-cargo="<?php echo htmlspecialchars($t->cargo); ?>"
                                             data-ads="<?php echo htmlspecialchars($t->adscripcion); ?>"
                                             data-tel="<?php echo htmlspecialchars($t->telefono); ?>">
@@ -319,30 +378,30 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
                                 </select>
                             </div>
                             
-                            <div id="panel-datos" class="p-4 bg-white border border-dashed border-primary/30 rounded-lg dark:bg-gray-800 dark:border-gray-600 hidden">
+                            <div id="panel-datos-recibe" class="p-4 bg-white border border-dashed border-primary/30 rounded-lg dark:bg-gray-800 dark:border-gray-600 hidden">
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
                                         <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Matrícula</p>
-                                        <p id="val-mat" class="font-bold text-sm"></p>
+                                        <p id="val-mat-recibe" class="font-bold text-sm"></p>
                                     </div>
                                     <div>
                                         <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Teléfono</p>
-                                        <p id="val-tel" class="text-sm"></p>
+                                        <p id="val-tel-recibe" class="text-sm"></p>
                                     </div>
                                     <div class="col-span-2">
                                         <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Cargo</p>
-                                        <p id="val-cargo" class="text-sm"></p>
+                                        <p id="val-cargo-recibe" class="text-sm"></p>
                                     </div>
                                     <div class="col-span-2">
                                         <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Adscripción</p>
-                                        <p id="val-ads" class="text-sm"></p>
+                                        <p id="val-ads-recibe" class="text-sm"></p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Columna Quien Entrega -->
+                    <!-- Columna Quien ENTREGA -->
                     <div class="rounded-lg border-2 border-imss-border p-5 bg-green-50/30 dark:border-gray-700 dark:bg-green-900/10">
                         <h4 class="text-sm uppercase tracking-wide text-imss-gray font-bold mb-4 flex items-center gap-2">
                             <span class="size-2 rounded-full bg-green-500"></span> Quien Entrega
@@ -350,21 +409,46 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
-                                    Nombre Completo
+                                    Seleccionar Trabajador <span class="text-red-500">*</span>
                                 </label>
-                                <input type="text" 
-                                       name="recibe_resguardo" 
-                                       placeholder="Ej. Juan Pérez López"
-                                       class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+                                <select name="matricula_entrega" 
+                                        id="matricula_entrega" 
+                                        class="w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-white" 
+                                        required 
+                                        onchange="mostrarDatosTrabajador(this, 'entrega')">
+                                    <option value="">-- Seleccione un trabajador --</option>
+                                    <?php foreach($trabajadores as $t): ?>
+                                        <option value="<?php echo $t->matricula; ?>" 
+                                            data-mat="<?php echo htmlspecialchars($t->matricula); ?>"
+                                            data-nombre="<?php echo htmlspecialchars($t->nombre); ?>"
+                                            data-cargo="<?php echo htmlspecialchars($t->cargo); ?>"
+                                            data-ads="<?php echo htmlspecialchars($t->adscripcion); ?>"
+                                            data-tel="<?php echo htmlspecialchars($t->telefono); ?>">
+                                            <?php echo htmlspecialchars($t->nombre); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
-                                    Cargo / Puesto
-                                </label>
-                                <input type="text" 
-                                       name="entrega_resguardo" 
-                                       placeholder="Ej. Jefe de Departamento"
-                                       class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+                            
+                            <div id="panel-datos-entrega" class="p-4 bg-white border border-dashed border-primary/30 rounded-lg dark:bg-gray-800 dark:border-gray-600 hidden">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Matrícula</p>
+                                        <p id="val-mat-entrega" class="font-bold text-sm"></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Teléfono</p>
+                                        <p id="val-tel-entrega" class="text-sm"></p>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Cargo</p>
+                                        <p id="val-cargo-entrega" class="text-sm"></p>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Adscripción</p>
+                                        <p id="val-ads-entrega" class="text-sm"></p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -402,25 +486,45 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
                 <!-- Lista de Bienes -->
                 <div class="p-6">
                     <div id="contenedor-bienes" class="space-y-3">
-                        <div class="flex gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 items-center hover:shadow-md transition-shadow">
-                            <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 text-primary flex-shrink-0">
+                        <div class="bien-row flex gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 items-start hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 text-primary flex-shrink-0 mt-1">
                                 <span class="material-symbols-outlined">inventory</span>
                             </div>
-                            <select name="bienes[0][bien_id]" class="flex-grow rounded-lg border-gray-300 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
-                                <option value="">-- Seleccionar Bien --</option>
-                                <?php foreach($bienesCatalogo as $b): ?>
-                                    <option value="<?php echo $b->id_bien; ?>">
-                                        <?php echo htmlspecialchars($b->serie ?: 'BIEN-'.$b->id_bien); ?> - <?php echo htmlspecialchars($b->descripcion); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <div class="flex items-center gap-2">
-                                <label class="text-xs font-bold text-gray-500 whitespace-nowrap">Cantidad:</label>
-                                <input type="number" 
-                                       name="bienes[0][cantidad]" 
-                                       value="1" 
-                                       min="1" 
-                                       class="w-20 rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <div class="flex-grow space-y-3">
+                                <select name="bienes[0][id_bien]" class="w-full rounded-lg border-gray-300 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
+                                    <option value="">-- Seleccionar Bien --</option>
+                                    <?php foreach($bienesCatalogo as $b): ?>
+                                        <option value="<?php echo $b->id_bien; ?>">
+                                            <?php echo htmlspecialchars($b->serie ?: 'BIEN-'.$b->id_bien); ?> - <?php echo htmlspecialchars($b->descripcion); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <div class="flex items-center gap-2">
+                                        <label class="text-xs font-bold text-gray-500 whitespace-nowrap">Cantidad:</label>
+                                        <input type="number" 
+                                               name="bienes[0][cantidad]" 
+                                               value="1" 
+                                               min="1" 
+                                               class="w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm">
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <label class="text-xs font-bold text-gray-500 whitespace-nowrap">Estado:</label>
+                                        <input type="text" 
+                                               name="bienes[0][estado_fisico]" 
+                                               placeholder="Ej. Bueno"
+                                               class="w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm">
+                                    </div>
+                                    <div class="flex items-center gap-2 constancia-only hidden">
+                                        <label class="text-xs font-bold text-gray-500 whitespace-nowrap flex items-center gap-1">
+                                            <input type="checkbox" 
+                                                   name="bienes[0][sujeto_devolucion]" 
+                                                   value="1"
+                                                   class="rounded border-gray-300 text-primary focus:ring-primary">
+                                            Sujeto a devolución
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -480,7 +584,7 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
                 <span class="material-symbols-outlined text-3xl">close</span>
             </button>
         </div>
-        <form class="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form id="form-trabajador" class="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="md:col-span-2">
                 <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Nombre Completo *</label>
                 <input type="text" name="nombre" class="w-full rounded-lg border-gray-300 bg-gray-50 focus:ring-accent dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Juan Pérez López" required>
@@ -494,20 +598,20 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
                 <input type="text" name="cargo" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Médico General" required>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Institucion *</label>
-                <input type="text" name="institucion" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Urgencias">
+                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Institución</label>
+                <input type="text" name="institucion" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. IMSS">
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Adscripción *</label>
+                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Adscripción</label>
                 <input type="text" name="adscripcion" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Urgencias">
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Teléfono *</label>
+                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Teléfono</label>
                 <input type="tel" name="telefono" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="951 874 7412">
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Identificacion *</label>
-                <input type="tel" name="identificacion" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="No se JAJAJAJ">
+                <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Identificación</label>
+                <input type="text" name="identificacion" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="INE/IFE">
             </div>
             <div class="md:col-span-2 pt-4 border-t border-imss-border dark:border-gray-700 flex justify-end gap-3">
                 <button type="button" onclick="toggleModal('modal-trabajador')" class="px-6 py-2 rounded-lg text-gray-500 font-bold hover:bg-gray-100 dark:hover:bg-gray-800 transition">
@@ -534,22 +638,19 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
                 <span class="material-symbols-outlined text-3xl">close</span>
             </button>
         </div>
-        <form class="p-8 space-y-6">
+        <form id="form-bien" class="p-8 space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="md:col-span-2">
                     <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Descripción del Bien *</label>
                     <input type="text" name="descripcion" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Monitor HP 24 pulgadas LED" required>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">No. de Inventario / SKU</label>
-                    <input type="text" name="identificacion" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="IMSS-2024-001">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Naturaleza</label>
-                    <select name="naturaleza" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+                    <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Naturaleza *</label>
+                    <select name="naturaleza" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" required>
                         <option value="BC">Bienes de Consumo (BC)</option>
                         <option value="BMNC" selected>Bienes Muebles No Capitalizables (BMNC)</option>
                         <option value="BMC">Bienes Muebles Capitalizables (BMC)</option>
+                        <option value="BPS">Bienes de Programas Sociales (BPS)</option>
                     </select>
                 </div>
                 <div>
@@ -563,10 +664,6 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
                 <div>
                     <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Serie</label>
                     <input type="text" name="serie" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. SN123456">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Estado</label>
-                    <input type="text" name="estado_fisico" class="w-full rounded-lg border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Ej. Excelente">
                 </div>
             </div>
             <div class="pt-4 border-t border-imss-border dark:border-gray-700 flex justify-end gap-3">
@@ -591,15 +688,15 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
     }
 
     // Mostrar datos del trabajador seleccionado
-    function mostrarDatosTrabajador(select) {
-        const panel = document.getElementById('panel-datos');
+    function mostrarDatosTrabajador(select, tipo) {
+        const panel = document.getElementById('panel-datos-' + tipo);
         const opt = select.options[select.selectedIndex];
         if (opt.value) {
             panel.classList.remove('hidden');
-            document.getElementById('val-mat').innerText = opt.dataset.mat;
-            document.getElementById('val-cargo').innerText = opt.dataset.cargo;
-            document.getElementById('val-ads').innerText = opt.dataset.ads;
-            document.getElementById('val-tel').innerText = opt.dataset.tel;
+            document.getElementById('val-mat-' + tipo).innerText = opt.dataset.mat;
+            document.getElementById('val-cargo-' + tipo).innerText = opt.dataset.cargo;
+            document.getElementById('val-ads-' + tipo).innerText = opt.dataset.ads;
+            document.getElementById('val-tel-' + tipo).innerText = opt.dataset.tel;
         } else {
             panel.classList.add('hidden');
         }
@@ -608,45 +705,107 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
     // Agregar fila de bien
     let bIdx = 1;
     function agregarFilaBien() {
+        const bienesCatalogo = <?php echo json_encode($bienesCatalogo); ?>;
+        
         const div = document.createElement('div');
-        div.className = "flex gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 items-center hover:shadow-md transition-shadow animate-pulse";
+        div.className = "bien-row flex gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 items-start hover:shadow-md transition-shadow animate-pulse";
+        
+        let optionsHTML = '<option value="">-- Seleccionar Bien --</option>';
+        bienesCatalogo.forEach(b => {
+            const label = (b.serie || 'BIEN-' + b.id_bien) + ' - ' + b.descripcion;
+            optionsHTML += `<option value="${b.id_bien}">${label}</option>`;
+        });
+        
         div.innerHTML = `
-            <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 text-primary flex-shrink-0">
+            <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 text-primary flex-shrink-0 mt-1">
                 <span class="material-symbols-outlined">inventory</span>
             </div>
-            <select name="bienes[${bIdx}][bien_id]" class="flex-grow rounded-lg border-gray-300 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
-                <option value="">-- Seleccionar Bien --</option>
-                <?php foreach($bienesCatalogo as $b): 
-                    echo "<option value='".$b->id_bien."'>".
-                        htmlspecialchars($b->serie ?: 'BIEN-'.$b->id_bien)." - ".
-                        htmlspecialchars($b->descripcion)."</option>"; 
-                endforeach; ?>
-            </select>
-            <div class="flex items-center gap-2">
-                <label class="text-xs font-bold text-gray-500 whitespace-nowrap">Cantidad:</label>
-                <input type="number" name="bienes[${bIdx}][cantidad]" value="1" min="1" class="w-20 rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+            <div class="flex-grow space-y-3">
+                <select name="bienes[${bIdx}][id_bien]" class="w-full rounded-lg border-gray-300 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
+                    ${optionsHTML}
+                </select>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-bold text-gray-500 whitespace-nowrap">Cantidad:</label>
+                        <input type="number" name="bienes[${bIdx}][cantidad]" value="1" min="1" class="w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-bold text-gray-500 whitespace-nowrap">Estado:</label>
+                        <input type="text" name="bienes[${bIdx}][estado_fisico]" placeholder="Ej. Bueno" class="w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm">
+                    </div>
+                    <div class="flex items-center gap-2 constancia-only hidden">
+                        <label class="text-xs font-bold text-gray-500 whitespace-nowrap flex items-center gap-1">
+                            <input type="checkbox" name="bienes[${bIdx}][sujeto_devolucion]" value="1" class="rounded border-gray-300 text-primary focus:ring-primary">
+                            Sujeto a devolución
+                        </label>
+                    </div>
+                </div>
             </div>
-            <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition dark:hover:bg-red-900/20">
+            <button type="button" onclick="this.closest('.bien-row').remove()" class="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition dark:hover:bg-red-900/20 mt-1">
                 <span class="material-symbols-outlined">delete</span>
             </button>
         `;
         document.getElementById('contenedor-bienes').appendChild(div);
         setTimeout(() => div.classList.remove('animate-pulse'), 300);
+        
+        // Aplicar visibilidad según tipo de documento
+        updateConstanciaFields();
         bIdx++;
     }
+
+    // Mostrar/ocultar campos según tipo de documento
+    function updateConstanciaFields() {
+        const tipoMovimiento = document.querySelector('input[name="tipo_movimiento"]:checked').value;
+        const constanciaFields = document.querySelectorAll('.constancia-only');
+        const diasPrestamoContainer = document.getElementById('dias-prestamo-container');
+        
+        // Mostrar "Sujeto a devolución" solo para Constancia de salida
+        constanciaFields.forEach(field => {
+            if (tipoMovimiento === 'Constancia de salida') {
+                field.classList.remove('hidden');
+            } else {
+                field.classList.add('hidden');
+            }
+        });
+        
+        // Mostrar "Días de préstamo" solo para Préstamo
+        if (tipoMovimiento === 'Prestamo') {
+            diasPrestamoContainer.classList.remove('hidden');
+            document.getElementById('dias_prestamo').required = true;
+        } else {
+            diasPrestamoContainer.classList.add('hidden');
+            document.getElementById('dias_prestamo').required = false;
+        }
+    }
+
+    // Event listeners para cambio de tipo de documento
+    document.querySelectorAll('input[name="tipo_movimiento"]').forEach(radio => {
+        radio.addEventListener('change', updateConstanciaFields);
+    });
+
+    // Inicializar al cargar la página
+    document.addEventListener('DOMContentLoaded', updateConstanciaFields);
+
     // Vista Previa del PDF
     function vistaPrevia() {
         const form = document.querySelector('form');
         
-        // Validar que hay un trabajador seleccionado
-        const trabajadorId = document.getElementById('trabajador_matricula').value;
-        if (!trabajadorId) {
-            alert('Por favor seleccione un trabajador');
+        // Validar que hay trabajadores seleccionados
+        const matriculaRecibe = document.getElementById('matricula_recibe').value;
+        const matriculaEntrega = document.getElementById('matricula_entrega').value;
+        
+        if (!matriculaRecibe) {
+            alert('Por favor seleccione el trabajador que recibe');
+            return;
+        }
+        
+        if (!matriculaEntrega) {
+            alert('Por favor seleccione el trabajador que entrega');
             return;
         }
         
         // Validar que hay al menos un bien
-        const primerBien = document.querySelector('select[name="bienes[0][bien_id]"]').value;
+        const primerBien = document.querySelector('select[name="bienes[0][id_bien]"]').value;
         if (!primerBien) {
             alert('Por favor seleccione al menos un bien');
             return;
@@ -655,7 +814,7 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
         // Cambiar temporalmente el action del formulario
         const actionOriginal = form.action;
         form.action = 'vista_previa_pdf.php';
-        form.target = '_blank'; // Abrir en nueva pestaña
+        form.target = '_blank';
         
         // Enviar formulario
         form.submit();
@@ -668,7 +827,7 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
     }
 
     // GUARDAR TRABAJADOR
-    document.querySelector('#modal-trabajador form').addEventListener('submit', function(e) {
+    document.getElementById('form-trabajador').addEventListener('submit', function(e) {
         e.preventDefault();
         
         const formData = new FormData(this);
@@ -686,20 +845,19 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Agregar al select
-                const select = document.getElementById('trabajador_matricula');
-                const option = document.createElement('option');
-                option.value = data.trabajador.matricula; // Usar matrícula como value
-                option.textContent = data.trabajador.nombre;
-                option.setAttribute('data-mat', data.trabajador.matricula);
-                option.setAttribute('data-cargo', data.trabajador.cargo);
-                option.setAttribute('data-ads', data.trabajador.adscripcion);
-                option.setAttribute('data-tel', data.trabajador.telefono);
-                select.appendChild(option);
-
-                // Seleccionar el nuevo trabajador
-                select.value = data.trabajador.matricula;
-                mostrarDatosTrabajador(select);
+                // Agregar a ambos selects (recibe y entrega)
+                ['matricula_recibe', 'matricula_entrega'].forEach(selectId => {
+                    const select = document.getElementById(selectId);
+                    const option = document.createElement('option');
+                    option.value = data.trabajador.matricula;
+                    option.textContent = data.trabajador.nombre;
+                    option.setAttribute('data-mat', data.trabajador.matricula);
+                    option.setAttribute('data-nombre', data.trabajador.nombre);
+                    option.setAttribute('data-cargo', data.trabajador.cargo);
+                    option.setAttribute('data-ads', data.trabajador.adscripcion);
+                    option.setAttribute('data-tel', data.trabajador.telefono);
+                    select.appendChild(option);
+                });
                 
                 // Cerrar modal y limpiar formulario
                 toggleModal('modal-trabajador');
@@ -722,7 +880,7 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
     });
 
     // GUARDAR BIEN
-    document.querySelector('#modal-bien form').addEventListener('submit', function(e) {
+    document.getElementById('form-bien').addEventListener('submit', function(e) {
         e.preventDefault();
         
         const formData = new FormData(this);
@@ -745,7 +903,8 @@ $bienesCatalogo = $bienRepo->obtenerTodos();
                 selects.forEach(select => {
                     const option = document.createElement('option');
                     option.value = data.bien.id;
-                    option.textContent = `${data.bien.identificacion} - ${data.bien.descripcion}`;
+                    const label = (data.bien.serie || 'BIEN-' + data.bien.id) + ' - ' + data.bien.descripcion;
+                    option.textContent = label;
                     select.appendChild(option);
                 });
                 
