@@ -1,21 +1,27 @@
-// public/assets/js/generador_documentos.js - VERSIÓN FINAL SIN getElementById
+// public/assets/js/generador_documentos.js - VERSIÓN CON CÁLCULO DE DÍAS DE PRÉSTAMO
 
 window.updateConstanciaFields = function () {
     const checkboxes = document.querySelectorAll('input[name="tipos_movimiento[]"]:checked');
     const tiposSeleccionados = Array.from(checkboxes).map(cb => cb.value);
     
-    // Días de préstamo
-    const diasContainer = document.querySelector('#dias-prestamo-container');
-    const inputDias = document.querySelector('#dias_prestamo');
+    // Fecha de devolución para Préstamo
+    const fechaDevolucionContainer = document.querySelector('#fecha-devolucion-container');
+    const inputFechaDevolucion = document.querySelector('#fecha_devolucion_prestamo');
 
     const tienePrestamo = tiposSeleccionados.includes('Prestamo');
-    if (diasContainer) {
+    if (fechaDevolucionContainer) {
         if (tienePrestamo) {
-            diasContainer.classList.remove('hidden');
+            fechaDevolucionContainer.classList.remove('hidden');
         } else {
-            diasContainer.classList.add('hidden');
+            fechaDevolucionContainer.classList.add('hidden');
         }
-        if (inputDias) inputDias.required = tienePrestamo;
+        if (inputFechaDevolucion) {
+            inputFechaDevolucion.required = tienePrestamo;
+            // Calcular días si hay fecha seleccionada
+            if (tienePrestamo && inputFechaDevolucion.value) {
+                calcularDiasPrestamo();
+            }
+        }
     }
 
     // Constancia de salida
@@ -29,12 +35,88 @@ window.updateConstanciaFields = function () {
     });
 };
 
+// Función para calcular días de préstamo
+window.calcularDiasPrestamo = function() {
+    const fechaEmision = document.querySelector('#fecha');
+    const fechaDevolucion = document.querySelector('#fecha_devolucion_prestamo');
+    const diasCalculadosSpan = document.querySelector('#dias-calculados');
+    const diasPrestamoHidden = document.querySelector('#dias_prestamo');
+    
+    if (!fechaEmision || !fechaDevolucion || !diasCalculadosSpan || !diasPrestamoHidden) {
+        console.error('No se encontraron todos los elementos necesarios para calcular días');
+        return;
+    }
+    
+    const fechaEmisionValue = fechaEmision.value;
+    const fechaDevolucionValue = fechaDevolucion.value;
+    
+    if (!fechaEmisionValue || !fechaDevolucionValue) {
+        diasCalculadosSpan.textContent = '';
+        diasPrestamoHidden.value = '';
+        return;
+    }
+    
+    // Calcular diferencia en días
+    const fecha1 = new Date(fechaEmisionValue);
+    const fecha2 = new Date(fechaDevolucionValue);
+    
+    // Validar que la fecha de devolución sea posterior a la emisión
+    if (fecha2 <= fecha1) {
+        diasCalculadosSpan.textContent = '⚠️ La fecha de devolución debe ser posterior a la fecha de emisión';
+        diasCalculadosSpan.classList.remove('text-blue-600', 'dark:text-blue-400');
+        diasCalculadosSpan.classList.add('text-red-600', 'dark:text-red-400');
+        diasPrestamoHidden.value = '';
+        return;
+    }
+    
+    const diffTime = Math.abs(fecha2 - fecha1);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    diasCalculadosSpan.textContent = `✓ ${diffDays} día${diffDays !== 1 ? 's' : ''} de préstamo`;
+    diasCalculadosSpan.classList.remove('text-red-600', 'dark:text-red-400');
+    diasCalculadosSpan.classList.add('text-blue-600', 'dark:text-blue-400');
+    diasPrestamoHidden.value = diffDays;
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     window.updateConstanciaFields();
 
+    // Listener para cambios en tipos de movimiento
     document.querySelectorAll('input[name="tipos_movimiento[]"]').forEach(function(checkbox) {
         checkbox.addEventListener('change', window.updateConstanciaFields);
     });
+    
+    // Listener para calcular días cuando cambia la fecha de emisión
+    const fechaEmision = document.querySelector('#fecha');
+    if (fechaEmision) {
+        fechaEmision.addEventListener('change', function() {
+            calcularDiasPrestamo();
+        });
+    }
+    
+    // Listener para calcular días cuando cambia la fecha de devolución
+    const fechaDevolucion = document.querySelector('#fecha_devolucion_prestamo');
+    if (fechaDevolucion) {
+        fechaDevolucion.addEventListener('change', function() {
+            calcularDiasPrestamo();
+        });
+    }
+    
+    // Configurar fecha mínima para fecha de devolución (debe ser posterior a fecha de emisión)
+    if (fechaEmision && fechaDevolucion) {
+        fechaEmision.addEventListener('change', function() {
+            if (this.value) {
+                const fechaMin = new Date(this.value);
+                fechaMin.setDate(fechaMin.getDate() + 1);
+                fechaDevolucion.min = fechaMin.toISOString().split('T')[0];
+                
+                // Si ya hay una fecha de devolución, recalcular
+                if (fechaDevolucion.value) {
+                    calcularDiasPrestamo();
+                }
+            }
+        });
+    }
 });
 
 window.vistaPrevia = function () {
@@ -87,24 +169,29 @@ window.vistaPrevia = function () {
     
     console.log('Bienes validados');
 
-    // 4. Validar días de préstamo si Préstamo está seleccionado
+    // 4. Validar fecha de devolución si Préstamo está seleccionado
     const tienePrestamo = Array.from(tiposSeleccionados).some(function(cb) {
         return cb.value === 'Prestamo';
     });
     
     if (tienePrestamo) {
-        const diasPrestamoInput = form.querySelector('input[name="dias_prestamo"]');
-        if (diasPrestamoInput) {
-            const dias = parseInt(diasPrestamoInput.value);
-            if (!dias || dias <= 0) {
-                alert('Por favor ingrese los días de préstamo (debe ser mayor a 0)');
-                diasPrestamoInput.focus();
-                return;
-            }
+        const fechaDevolucionInput = form.querySelector('input[name="fecha_devolucion_prestamo"]');
+        const diasPrestamoHidden = form.querySelector('input[name="dias_prestamo"]');
+        
+        if (fechaDevolucionInput && !fechaDevolucionInput.value) {
+            alert('Por favor seleccione la fecha de devolución del préstamo');
+            fechaDevolucionInput.focus();
+            return;
+        }
+        
+        if (diasPrestamoHidden && (!diasPrestamoHidden.value || diasPrestamoHidden.value <= 0)) {
+            alert('La fecha de devolución debe ser posterior a la fecha de emisión');
+            fechaDevolucionInput.focus();
+            return;
         }
     }
     
-    console.log('Días de préstamo validados');
+    console.log('Validaciones completadas');
 
     // 5. Configurar envío temporal para vista previa
     const actionOriginal = form.action;

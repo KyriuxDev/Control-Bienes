@@ -1,17 +1,20 @@
 <?php
-// public/vista_previa_pdf.php - VERSIÓN MÚLTIPLES FORMATOS CON FOLIO AUTOMÁTICO Y FECHA CORREGIDA
+// public/vista_previa_pdf.php - VERSIÓN CON SOPORTE PARA LOS 3 TIPOS DE DOCUMENTOS
 session_start();
 error_reporting(E_ALL);
-ini_set('display_errors', 1); // Activar para ver errores
+ini_set('display_errors', 1);
 ini_set('log_errors', 1);
 
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/generadores/GeneradorResguardoPDF.php';
+require_once __DIR__ . '/generadores/GeneradorSalidaPDF.php';
+require_once __DIR__ . '/generadores/GeneradorPrestamoPDF.php';
 
 use App\Infrastructure\Config\Database;
 use App\Infrastructure\Repository\MySQLTrabajadorRepository;
 use App\Infrastructure\Repository\MySQLBienRepository;
 use App\Infrastructure\Helper\FolioGenerator;
+use setasign\Fpdi\Tcpdf\Fpdi;
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Content-Type: text/html; charset=utf-8');
@@ -61,8 +64,7 @@ try {
     // GENERAR FOLIO TEMPORAL PARA VISTA PREVIA
     $folio = $folioGenerator->generarFolio();
     
-    // Para vista previa, solo mostramos el primer tipo seleccionado
-    $tipoMovimiento = $_POST['tipos_movimiento'][0];
+    $tiposMovimiento = $_POST['tipos_movimiento'];
     
     // 1. Obtener Trabajadores
     if (empty($_POST['matricula_recibe']) || empty($_POST['matricula_entrega'])) {
@@ -103,47 +105,105 @@ try {
         throw new Exception("Debe seleccionar al menos un bien válido");
     }
 
-    // 3. Preparar datos adicionales con la fecha del formulario
+    // 3. Preparar datos adicionales
     $datosAdicionales = array(
         'folio' => $folio,
-        'fecha' => $_POST['fecha'], // Fecha en formato YYYY-MM-DD
+        'fecha' => $_POST['fecha'],
         'lugar' => $_POST['lugar'],
         'recibe_resguardo' => $trabajadorRecibe->getNombre(),
         'entrega_resguardo' => $trabajadorEntrega->getNombre(),
         'cargo_entrega' => $trabajadorEntrega->getCargo(),
-        'tipo_documento' => $tipoMovimiento
+        'departamento_per' => $trabajadorRecibe->getAdscripcion(),
+        'responsable_control_administrativo' => $trabajadorEntrega->getNombre(),
+        'matricula_administrativo' => $trabajadorEntrega->getMatricula(),
+        'matricula_coordinacion' => $trabajadorRecibe->getMatricula(),
+        // Datos adicionales para Préstamo y Constancia de Salida
+        'dias_prestamo' => isset($_POST['dias_prestamo']) ? $_POST['dias_prestamo'] : null,
+        'fecha_devolucion_prestamo' => isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : null,
+        'devolucion' => 'no' // Por defecto NO
     );
 
-    // 4. Generar PDF temporal
-    $rutaTemporal = __DIR__ . '/pdfs/preview_' . time() . '_' . uniqid() . '.pdf';
-
-    // Asegurar que existe el directorio
+    // 4. Generar PDFs temporales
+    $archivosTemporales = array();
+    
     if (!file_exists(__DIR__ . '/pdfs')) {
         if (!mkdir(__DIR__ . '/pdfs', 0775, true)) {
             throw new Exception("No se pudo crear el directorio de PDFs");
         }
     }
 
-    $generador = new GeneradorResguardoPDF();
-    $generador->generar($trabajadorRecibe, $bienesSeleccionados, $datosAdicionales, $rutaTemporal);
-
-    // Verificar que se generó el archivo
-    if (!file_exists($rutaTemporal)) {
-        throw new Exception("Error al generar el PDF temporal");
+    foreach ($tiposMovimiento as $tipoMovimiento) {
+        $rutaTemporal = __DIR__ . '/pdfs/preview_' . strtolower(str_replace(' ', '_', $tipoMovimiento)) . '_' . time() . '_' . uniqid() . '.pdf';
+        
+        // Seleccionar generador según el tipo
+        if ($tipoMovimiento === 'Resguardo') {
+            $generador = new GeneradorResguardoPDF();
+        } elseif ($tipoMovimiento === 'Constancia de salida') {
+            $generador = new GeneradorSalidaPDF();
+        } elseif ($tipoMovimiento === 'Prestamo') {
+            $generador = new GeneradorPrestamoPDF();
+        } else {
+            continue; // Tipo no válido
+        }
+        
+        $generador->generar($trabajadorRecibe, $bienesSeleccionados, $datosAdicionales, $rutaTemporal);
+        
+        if (!file_exists($rutaTemporal)) {
+            throw new Exception("Error al generar el PDF temporal para " . $tipoMovimiento);
+        }
+        
+        $archivosTemporales[] = $rutaTemporal;
     }
 
-    // 5. Mostrar en el navegador (inline, no descarga)
-    header('Content-Type: application/pdf');
-    header('Content-Disposition: inline; filename="Vista_Previa_' . str_replace(' ', '_', $tipoMovimiento) . '.pdf"');
-    header('Content-Length: ' . filesize($rutaTemporal));
-    header('Cache-Control: no-cache, no-store, must-revalidate');
-    header('Pragma: no-cache');
-    header('Expires: 0');
-    
-    readfile($rutaTemporal);
-
-    // 6. Limpiar archivo temporal
-    @unlink($rutaTemporal);
+    // 5. Si hay un solo archivo, mostrarlo directamente
+    if (count($archivosTemporales) === 1) {
+        $rutaTemporal = $archivosTemporales[0];
+        
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: inline; filename="Vista_Previa_' . str_replace(' ', '_', $tiposMovimiento[0]) . '.pdf"');
+        header('Content-Length: ' . filesize($rutaTemporal));
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        readfile($rutaTemporal);
+        
+        @unlink($rutaTemporal);
+    } else {
+        // Si hay múltiples archivos, combinarlos
+        $pdfCombinado = new Fpdi();
+        $pdfCombinado->setPrintHeader(false);
+        $pdfCombinado->setPrintFooter(false);
+        
+        foreach ($archivosTemporales as $rutaTemporal) {
+            $numPaginas = $pdfCombinado->setSourceFile($rutaTemporal);
+            
+            for ($i = 1; $i <= $numPaginas; $i++) {
+                $pdfCombinado->AddPage();
+                $templateId = $pdfCombinado->importPage($i);
+                $pdfCombinado->useTemplate($templateId, 0, 0, null, null, true);
+            }
+        }
+        
+        $rutaCombinada = __DIR__ . '/pdfs/preview_combined_' . time() . '.pdf';
+        $pdfCombinado->Output($rutaCombinada, 'F');
+        
+        // Mostrar PDF combinado
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: inline; filename="Vista_Previa_Documentos.pdf"');
+        header('Content-Length: ' . filesize($rutaCombinada));
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        readfile($rutaCombinada);
+        
+        // Limpiar archivos temporales
+        foreach ($archivosTemporales as $rutaTemporal) {
+            @unlink($rutaTemporal);
+        }
+        @unlink($rutaCombinada);
+    }
     
 } catch (Exception $e) {
     error_log("ERROR en vista_previa_pdf.php: " . $e->getMessage());

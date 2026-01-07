@@ -23,7 +23,6 @@ class GeneradorSalidaPDF {
             "10" => "octubre", "11" => "noviembre", "12" => "diciembre"
         );
         
-        // Parsear la fecha recibida (YYYY-MM-DD)
         $timestamp = strtotime($fechaStr . ' 12:00:00');
         
         $dia = date('j', $timestamp);
@@ -32,6 +31,28 @@ class GeneradorSalidaPDF {
         $anio = date('Y', $timestamp);
         
         return $lugar . ", " . $dia . " de " . $mesTexto . " de " . $anio;
+    }
+    
+    /**
+     * Genera fecha corta sin lugar (para fecha de devolución)
+     * Formato: "30 de enero de 2025"
+     */
+    private function generarTextoFechaCorta($fechaStr) {
+        $meses = array(
+            "1" => "enero", "2" => "febrero", "3" => "marzo", 
+            "4" => "abril", "5" => "mayo", "6" => "junio", 
+            "7" => "julio", "8" => "agosto", "9" => "septiembre", 
+            "10" => "octubre", "11" => "noviembre", "12" => "diciembre"
+        );
+        
+        $timestamp = strtotime($fechaStr . ' 12:00:00');
+        
+        $dia = date('j', $timestamp);
+        $mesNumero = date('n', $timestamp);
+        $mesTexto = $meses[$mesNumero];
+        $anio = date('Y', $timestamp);
+        
+        return $dia . " de " . $mesTexto . " de " . $anio;
     }
     
     public function generar($trabajador, $bienes, $datosAdicionales, $rutaSalida) {
@@ -46,7 +67,7 @@ class GeneradorSalidaPDF {
         
         $this->llenarDatos($trabajador, $bienes, $datosAdicionales);
 
-        if (count($bienes) >= 2) {
+        if (count($bienes) > 5) {
             $this->generarAnexo($trabajador, $bienes, $datosAdicionales);
         }
 
@@ -54,76 +75,155 @@ class GeneradorSalidaPDF {
     }
     
     private function llenarDatos($trabajador, $bienes, $datosAdicionales) {
-        $this->pdf->SetFont('helvetica', '', 7);
+        $this->pdf->SetFont('helvetica', '', 9);
         $this->pdf->SetTextColor(0, 0, 0);
 
-        // FECHA - Usar la fecha del formulario
+        // NOMBRE DEL TRABAJADOR
+        $this->pdf->SetXY(23, 50);
+        $nombre_limitado = mb_strimwidth($trabajador->getNombre(), 0, 65, '...');
+        $this->pdf->Write(10, $nombre_limitado);
+
+        // INSTITUCIÓN
+        $this->pdf->SetXY(129, 52.5);
+        $institucion_limitado = mb_strimwidth($trabajador->getInstitucion(), 0, 50, '...');
+        $this->pdf->Write(5, $institucion_limitado);
+
+        // ADSCRIPCIÓN
+        $this->pdf->SetXY(38, 55.5);
+        $adscripcion_limitado = mb_strimwidth($trabajador->getAdscripcion(), 0, 50, '...');
+        $this->pdf->Write(10, $adscripcion_limitado);
+
+        // MATRÍCULA
+        $this->pdf->SetXY(170, 57.5);
+        $this->pdf->Write(6, $trabajador->getMatricula());
+
+        // IDENTIFICACIÓN
+        $this->pdf->SetXY(44, 60.5);
+        $identificacion_limitado = mb_strimwidth($trabajador->getIdentificacion(), 0, 45, '..');
+        $this->pdf->Write(11, $identificacion_limitado);
+
+        // TELÉFONO
+        $this->pdf->SetXY(167, 60.5);
+        $this->pdf->Write(11, $trabajador->getTelefono());
+
+        // ÁREA DE SALIDA
+        $area = isset($datosAdicionales['area']) ? $datosAdicionales['area'] : 'Coordinación de Informática';
+        $this->pdf->SetXY(55, 73);
+        $this->pdf->Write(10, $area);
+
+        // CANTIDAD TOTAL DE BIENES
+        $cantidadTotal = 0;
+        foreach($bienes as $b) {
+            $cantidadTotal += isset($b['cantidad']) ? $b['cantidad'] : 1;
+        }
+        $this->pdf->SetXY(30, 95);
+        $this->pdf->Write(10, $cantidadTotal);
+
+        // NATURALEZA DE LOS BIENES (del primer bien)
+        if (!empty($bienes)) {
+            $naturaleza = $bienes[0]['bien']->getNaturaleza();
+            $this->pdf->SetXY(65, 95);
+            $this->pdf->Write(10, $naturaleza);
+            $this->marcarCasillaNaturaleza($naturaleza);
+        }
+
+        // PROPÓSITO DEL BIEN
+        $proposito = isset($datosAdicionales['proposito']) ? $datosAdicionales['proposito'] : 'Uso institucional';
+        $this->pdf->SetXY(42, 129);
+        $this->pdf->Write(10, $proposito);
+
+        // ESTADO DE LOS BIENES
+        $estado = isset($datosAdicionales['estado_general']) ? $datosAdicionales['estado_general'] : 'Bueno';
+        $this->pdf->SetXY(115, 137);
+        $this->pdf->Write(10, $estado);
+
+        // DEVOLUCIÓN (SI/NO)
+        $devolucion = isset($datosAdicionales['devolucion']) ? $datosAdicionales['devolucion'] : 'no';
+        if ($devolucion == 'si') {
+            $this->pdf->SetXY(77, 144);
+            $this->pdf->Write(15, 'X');
+            
+            // FECHA DE DEVOLUCIÓN FORMATEADA (debajo de los días)
+            if (isset($datosAdicionales['fecha_devolucion_prestamo']) && !empty($datosAdicionales['fecha_devolucion_prestamo'])) {
+                $fechaDevolucionFormateada = $this->generarTextoFechaCorta($datosAdicionales['fecha_devolucion_prestamo']);
+                $this->pdf->SetFont('helvetica', '', 7); // Tamaño más pequeño
+                $this->pdf->SetXY(111 , 149); // Debajo de los días
+                $this->pdf->Write(5, $fechaDevolucionFormateada);
+                $this->pdf->SetFont('helvetica', '', 8); // Restaurar fuente normal
+            }
+        } else {
+            $this->pdf->SetXY(92, 144);
+            $this->pdf->Write(15, 'X');
+        }
+
+        
+
+        // DESCRIPCIONES DE BIENES
+        $this->escribirDescripcionesBienes($bienes);
+
+        // RESPONSABLE QUE ENTREGA
+        $this->pdf->SetFont('helvetica', '', 9);
+        $this->pdf->SetXY(10, 191);
+        $this->pdf->Write(10, $trabajador->getNombre());
+
+        // RESPONSABLE DE LA ENTREGA (Firma)
+        $this->pdf->SetXY(120, 191);
+        $responsableEntrega = isset($datosAdicionales['entrega_resguardo']) ? $datosAdicionales['entrega_resguardo'] : $trabajador->getNombre();
+        $this->pdf->Write(10, $responsableEntrega);
+
+        // FECHA Y LUGAR
         $lugar = isset($datosAdicionales['lugar']) ? $datosAdicionales['lugar'] : 'Oaxaca de Juárez, Oaxaca';
+        $fechaFormateada = $this->generarTextoFecha($datosAdicionales['fecha'], $lugar);
         
-        if (isset($datosAdicionales['fecha'])) {
-            $fechaFormateada = $this->generarTextoFecha($datosAdicionales['fecha'], $lugar);
-        } else {
-            $fechaFormateada = $this->generarTextoFecha(date('Y-m-d'), $lugar);
-        }
-        
-        $this->pdf->SetXY(112, 54.5); 
+        $this->pdf->SetXY(10, 212);
         $this->pdf->Write(8, $fechaFormateada);
-        
-        // FOLIO
-        $this->pdf->SetXY(176, 53.5);
-        $this->pdf->Write(10, $datosAdicionales['folio']); 
+    }
 
-        // DATOS TRABAJADOR
-        $this->pdf->SetXY(55, 72); 
-        $this->pdf->Write(8, $trabajador->getInstitucion());
+    private function escribirDescripcionesBienes($bienes) {
+        $this->pdf->SetFont('helvetica', '', 9);
         
-        $this->pdf->SetXY(55, 76); 
-        $this->pdf->Write(8, $trabajador->getNombre()); 
-        
-        $this->pdf->SetXY(55, 80); 
-        $this->pdf->Write(8, $trabajador->getCargo()); 
-        
-        $this->pdf->SetXY(55, 84); 
-        $this->pdf->Write(8, $trabajador->getAdscripcion());
-        
-        $this->pdf->SetXY(55, 88); 
-        $this->pdf->Write(8, $trabajador->getTelefono()); 
+        $x = 98;
+        $y = 98;
+        $width = 100;
+        $lineHeight = 5;
 
-        // CUERPO
-        if (count($bienes) >= 2) {
-            $this->pdf->SetXY(138, 109);
-            $this->pdf->Write(5, "VER ANEXO ADJUNTO ( " . count($bienes) . " PARTIDAS )");
-        } else {
-            $bien = $bienes[0]['bien'];
-            $cantidad = isset($bienes[0]['cantidad']) ? $bienes[0]['cantidad'] : '1';
-
-            $this->pdf->SetXY(30, 115); 
-            $this->pdf->Write(5, $cantidad);
-
-            $this->pdf->SetXY(128, 109);
-            $this->pdf->Write(5, $bien->getDescripcion());
-            
-            $this->pdf->SetXY(128, 115); 
-            $this->pdf->Write(8, $bien->getMarca());
-            
-            $this->pdf->SetXY(128, 120); 
-            $this->pdf->Write(13, $bien->getSerie());
+        if (count($bienes) > 5) {
+            $this->pdf->SetXY($x, $y + 2);
+            $this->pdf->SetFont('helvetica', '', 8);
+            $this->pdf->MultiCell($width, $lineHeight, 'Ver Anexo Adjunto (' . count($bienes) . ' partidas)', 0, 'L');
+            return;
         }
 
-        // FIRMAS - Primera página
-        // Quien RECIBE (Resguardante - Izquierda)
-        $this->pdf->SetXY(28, 228); 
-        $this->pdf->Write(8, $trabajador->getNombre()); 
+        // Mostrar hasta 5 bienes
+        $primeros = array_slice($bienes, 0, 5);
+        foreach ($primeros as $item) {
+            $bien = $item['bien'];
+            $descripcion = $bien->getDescripcion();
+            
+            if (strlen($descripcion) > 50) {
+                $descripcion = substr($descripcion, 0, 47) . '...';
+            }
+            
+            $this->pdf->SetXY($x, $y);
+            $this->pdf->MultiCell($width, $lineHeight, $descripcion, 0, 'L');
+            $y = $this->pdf->GetY();
+        }
+    }
+
+    private function marcarCasillaNaturaleza($naturaleza) {
+        $coords = array(
+            'BC' => array(14, 232),
+            'BMC' => array(14, 241),
+            'BMNC' => array(112, 232),
+            'BPS' => array(112, 241)
+        );
         
-        $this->pdf->SetXY(20, 232); 
-        $this->pdf->Write(8, $trabajador->getCargo());
-        
-        // Quien ENTREGA (Derecha)
-        $this->pdf->SetXY(118, 228); 
-        $this->pdf->Write(10, $datosAdicionales['entrega_resguardo']);
-        
-        $this->pdf->SetXY(111, 232); 
-        $this->pdf->Write(10, $datosAdicionales['cargo_entrega']); 
+        if (isset($coords[$naturaleza])) {
+            $this->pdf->SetFillColor(173, 216, 230);
+            $this->pdf->SetAlpha(0.5);
+            $this->pdf->Rect($coords[$naturaleza][0], $coords[$naturaleza][1], 15, 5, 'F');
+            $this->pdf->SetAlpha(1.0);
+        }
     }
 
     private function generarAnexo($trabajador, $bienes, $datosAdicionales) {
@@ -133,7 +233,7 @@ class GeneradorSalidaPDF {
 
         // ENCABEZADO
         $this->pdf->SetFont('helvetica', 'B', 11);
-        $this->pdf->Cell(0, 10, "ANEXO DE RESGUARDO DE BIENES", 0, 1, 'C');
+        $this->pdf->Cell(0, 10, "ANEXO - CONSTANCIA DE SALIDA DE BIENES", 0, 1, 'C');
         
         $this->pdf->SetFont('helvetica', '', 9);
         $this->pdf->Cell(0, 5, "FOLIO: " . $datosAdicionales['folio'], 0, 1, 'C');
@@ -143,7 +243,7 @@ class GeneradorSalidaPDF {
         $this->pdf->SetFillColor(235, 235, 235);
         $this->pdf->SetFont('helvetica', '', 8);
         
-        $w = array(15, 65, 34, 33, 33); 
+        $w = array(15, 65, 34, 33, 33);
         
         $this->pdf->Cell($w[0], 7, 'CANT.', 1, 0, 'C', 1);
         $this->pdf->Cell($w[1], 7, 'DESCRIPCIÓN', 1, 0, 'C', 1);
@@ -158,9 +258,7 @@ class GeneradorSalidaPDF {
 
             $nb = $this->pdf->getNumLines($bien->getDescripcion(), $w[1]);
             $h = 5 * $nb;
-            if($h < 7) {
-                $h = 7;
-            }
+            if($h < 7) $h = 7;
 
             $this->pdf->MultiCell($w[0], $h, $cant, 1, 'C', 0, 0);
             $this->pdf->MultiCell($w[1], $h, $bien->getDescripcion(), 1, 'L', 0, 0);
@@ -169,7 +267,7 @@ class GeneradorSalidaPDF {
             $this->pdf->MultiCell($w[4], $h, $bien->getSerie(), 1, 'L', 0, 1);
         }
 
-        // BLOQUE DE FIRMAS
+        // FIRMAS
         $this->pdf->Ln(20);
         $yFirmas = $this->pdf->GetY();
         
@@ -180,12 +278,12 @@ class GeneradorSalidaPDF {
 
         $this->pdf->SetFont('helvetica', '', 8);
         
-        // Columna Izquierda: Resguardante
+        // Quien RECIBE (Izquierda)
         $this->pdf->SetXY(15, $yFirmas);
         $this->pdf->Cell(80, 0, '', 'T', 0, 'C');
         
         $this->pdf->SetXY(15, $yFirmas + 2);
-        $this->pdf->Cell(80, 4, "RESGUARDANTE", 0, 1, 'C');
+        $this->pdf->Cell(80, 4, "RECIBE", 0, 1, 'C');
         
         $this->pdf->SetX(15);
         $this->pdf->SetFont('helvetica', '', 7.5);
@@ -195,7 +293,7 @@ class GeneradorSalidaPDF {
         $this->pdf->SetFont('helvetica', '', 6.5);
         $this->pdf->MultiCell(80, 3, $trabajador->getCargo(), 0, 'C');
 
-        // Columna Derecha: Entrega
+        // Quien ENTREGA (Derecha)
         $this->pdf->SetFont('helvetica', '', 8);
         $this->pdf->SetXY(115, $yFirmas);
         $this->pdf->Cell(80, 0, '', 'T', 0, 'C');
@@ -205,11 +303,12 @@ class GeneradorSalidaPDF {
         
         $this->pdf->SetX(115);
         $this->pdf->SetFont('helvetica', '', 7.5);
-        $this->pdf->Cell(80, 4, $datosAdicionales['entrega_resguardo'], 0, 1, 'C');
+        $nombreEntrega = isset($datosAdicionales['entrega_resguardo']) ? $datosAdicionales['entrega_resguardo'] : $trabajador->getNombre();
+        $this->pdf->Cell(80, 4, $nombreEntrega, 0, 1, 'C');
         
         $this->pdf->SetX(115);
         $this->pdf->SetFont('helvetica', '', 6.5);
-        $cargoEntrega = isset($datosAdicionales['cargo_entrega']) ? $datosAdicionales['cargo_entrega'] : "DEPARTAMENTO DE BIENES Y SUMINISTROS";
+        $cargoEntrega = isset($datosAdicionales['cargo_entrega']) ? $datosAdicionales['cargo_entrega'] : "COORDINACIÓN DE INFORMÁTICA";
         $this->pdf->MultiCell(80, 3, $cargoEntrega, 0, 'C');
     }
 }

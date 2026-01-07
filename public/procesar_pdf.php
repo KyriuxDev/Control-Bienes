@@ -1,8 +1,10 @@
 <?php
-// public/procesar_pdf.php - VERSIÓN MÚLTIPLES FORMATOS CON FOLIO AUTOMÁTICO Y FECHA CORREGIDA
+// public/procesar_pdf.php - VERSIÓN CON COMBINACIÓN DE MÚLTIPLES FORMATOS EN UN SOLO PDF
 session_start();
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/generadores/GeneradorResguardoPDF.php';
+require_once __DIR__ . '/generadores/GeneradorSalidaPDF.php';
+require_once __DIR__ . '/generadores/GeneradorPrestamoPDF.php';
 
 use App\Infrastructure\Config\Database;
 use App\Infrastructure\Repository\MySQLTrabajadorRepository;
@@ -12,6 +14,7 @@ use App\Infrastructure\Repository\MySQLDetalleMovimientoRepository;
 use App\Infrastructure\Helper\FolioGenerator;
 use App\Domain\Entity\Movimiento;
 use App\Domain\Entity\Detalle_Movimiento;
+use setasign\Fpdi\Tcpdf\Fpdi;
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
 
@@ -34,7 +37,7 @@ try {
     $folio = $folioGenerator->generarFolioUnico();
     
     $tiposMovimiento = $_POST['tipos_movimiento'];
-    $archivosGenerados = array();
+    $archivosTemporales = array();
     
     // Iniciar transacción
     $pdo->beginTransaction();
@@ -98,30 +101,48 @@ try {
         // 3. Preparar datos para el PDF
         $datosAdicionales = array(
             'folio' => $folio,
-            'fecha' => $_POST['fecha'], // Fecha en formato YYYY-MM-DD
+            'fecha' => $_POST['fecha'],
             'lugar' => isset($_POST['lugar']) ? $_POST['lugar'] : 'Oaxaca de Juárez, Oaxaca',
             'recibe_resguardo' => $trabajadorRecibe->getNombre(),
             'entrega_resguardo' => $trabajadorEntrega->getNombre(),
             'cargo_entrega' => $trabajadorEntrega->getCargo(),
-            'tipo_documento' => $tipoMovimiento
+            'tipo_documento' => $tipoMovimiento,
+            'departamento_per' => $trabajadorRecibe->getAdscripcion(),
+            'responsable_control_administrativo' => $trabajadorEntrega->getNombre(),
+            'matricula_administrativo' => $trabajadorEntrega->getMatricula(),
+            'matricula_coordinacion' => $trabajadorRecibe->getMatricula(),
+            // Datos adicionales para Préstamo y Constancia de Salida
+            'dias_prestamo' => isset($_POST['dias_prestamo']) ? intval($_POST['dias_prestamo']) : null,
+            'fecha_devolucion_prestamo' => isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : null,
+            'devolucion' => 'no' // Por defecto NO, se puede modificar si hay checkbox
         );
         
-        // 4. Generar PDF
+        // Log para debug (solo en desarrollo)
+        error_log("Datos adicionales para {$tipoMovimiento}: " . print_r($datosAdicionales, true));
+        
+        // 4. Generar PDF temporal
         $nombreArchivo = strtolower(str_replace(' ', '_', $tipoMovimiento)) . '_' . 
-                         preg_replace('/[^a-z0-9_]/', '', strtolower($trabajadorRecibe->getNombre())) . '_' . 
                          time() . '_' . uniqid() . '.pdf';
-        $rutaSalida = __DIR__ . '/pdfs/' . $nombreArchivo;
+        $rutaTemporal = __DIR__ . '/pdfs/' . $nombreArchivo;
         
         if (!file_exists(__DIR__ . '/pdfs')) {
             mkdir(__DIR__ . '/pdfs', 0775, true);
         }
         
-        $generador = new GeneradorResguardoPDF();
-        $generador->generar($trabajadorRecibe, $bienesSeleccionados, $datosAdicionales, $rutaSalida);
+        // Seleccionar generador según el tipo
+        if ($tipoMovimiento === 'Resguardo') {
+            $generador = new GeneradorResguardoPDF();
+        } elseif ($tipoMovimiento === 'Constancia de salida') {
+            $generador = new GeneradorSalidaPDF();
+        } elseif ($tipoMovimiento === 'Prestamo') {
+            $generador = new GeneradorPrestamoPDF();
+        }
         
-        $archivosGenerados[] = array(
+        $generador->generar($trabajadorRecibe, $bienesSeleccionados, $datosAdicionales, $rutaTemporal);
+        
+        $archivosTemporales[] = array(
             'tipo' => $tipoMovimiento,
-            'ruta' => $rutaSalida,
+            'ruta' => $rutaTemporal,
             'nombre' => $nombreArchivo
         );
     }
@@ -130,10 +151,10 @@ try {
     $pdo->commit();
     
     // Si solo hay un archivo, descargarlo directamente
-    if (count($archivosGenerados) === 1) {
-        $archivo = $archivosGenerados[0];
+    if (count($archivosTemporales) === 1) {
+        $archivo = $archivosTemporales[0];
         header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="' . $archivo['nombre'] . '"');
+        header('Content-Disposition: attachment; filename="' . $archivo['tipo'] . '_' . $folio . '.pdf"');
         header('Content-Length: ' . filesize($archivo['ruta']));
         readfile($archivo['ruta']);
         
@@ -144,37 +165,44 @@ try {
             }
         });
     } else {
-        // Si hay múltiples archivos, crear un ZIP
-        $zipNombre = 'documentos_' . time() . '.zip';
-        $zipRuta = __DIR__ . '/pdfs/' . $zipNombre;
+        // Si hay múltiples archivos, combinarlos en un solo PDF
+        $pdfCombinado = new Fpdi();
+        $pdfCombinado->setPrintHeader(false);
+        $pdfCombinado->setPrintFooter(false);
         
-        $zip = new ZipArchive();
-        if ($zip->open($zipRuta, ZipArchive::CREATE) !== TRUE) {
-            throw new Exception("No se pudo crear el archivo ZIP");
+        foreach ($archivosTemporales as $archivo) {
+            // Obtener el número de páginas del PDF
+            $numPaginas = $pdfCombinado->setSourceFile($archivo['ruta']);
+            
+            // Importar cada página
+            for ($i = 1; $i <= $numPaginas; $i++) {
+                $pdfCombinado->AddPage();
+                $templateId = $pdfCombinado->importPage($i);
+                $pdfCombinado->useTemplate($templateId, 0, 0, null, null, true);
+            }
         }
         
-        foreach ($archivosGenerados as $archivo) {
-            $zip->addFile($archivo['ruta'], $archivo['nombre']);
-        }
+        // Guardar PDF combinado
+        $nombreCombinado = 'documentos_' . $folio . '_' . time() . '.pdf';
+        $rutaCombinada = __DIR__ . '/pdfs/' . $nombreCombinado;
+        $pdfCombinado->Output($rutaCombinada, 'F');
         
-        $zip->close();
-        
-        // Descargar ZIP
-        header('Content-Type: application/zip');
-        header('Content-Disposition: attachment; filename="' . $zipNombre . '"');
-        header('Content-Length: ' . filesize($zipRuta));
-        readfile($zipRuta);
+        // Descargar PDF combinado
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="Documentos_' . $folio . '.pdf"');
+        header('Content-Length: ' . filesize($rutaCombinada));
+        readfile($rutaCombinada);
         
         // Limpiar archivos temporales
-        register_shutdown_function(function() use ($archivosGenerados, $zipRuta) {
+        register_shutdown_function(function() use ($archivosTemporales, $rutaCombinada) {
             sleep(5);
-            foreach ($archivosGenerados as $archivo) {
+            foreach ($archivosTemporales as $archivo) {
                 if (file_exists($archivo['ruta'])) {
                     @unlink($archivo['ruta']);
                 }
             }
-            if (file_exists($zipRuta)) {
-                @unlink($zipRuta);
+            if (file_exists($rutaCombinada)) {
+                @unlink($rutaCombinada);
             }
         });
     }

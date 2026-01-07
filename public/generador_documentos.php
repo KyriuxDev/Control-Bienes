@@ -119,28 +119,32 @@ require __DIR__ . '/layouts/head.php';
                         </p>
                     </div>
 
-                    <!-- Campo días de préstamo (solo visible si es Préstamo) -->
-                    <div class="col-span-1 md:col-span-2 hidden" id="dias-prestamo-container">
-                        <label for="dias_prestamo" class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
-                            Días de Préstamo <span class="text-red-500">*</span>
+                    <!-- Campo fecha de devolución para préstamo (oculto por defecto) -->
+                    <div class="col-span-1 md:col-span-2 hidden" id="fecha-devolucion-container">
+                        <label for="fecha_devolucion_prestamo" class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
+                            Fecha de Devolución del Préstamo <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
-                            <input type="number" 
-                                   id="dias_prestamo" 
-                                   name="dias_prestamo" 
-                                   min="1"
-                                   placeholder="Ej. 15"
-                                   class="block w-full px-3 py-2.5 border-imss-border focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="material-symbols-outlined text-imss-gray text-lg">event</span>
+                            </div>
+                            <input type="date" 
+                                   id="fecha_devolucion_prestamo" 
+                                   name="fecha_devolucion_prestamo" 
+                                   class="block w-full pl-10 pr-3 py-2.5 border-imss-border focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white shadow-sm">
                         </div>
-                        <p class="mt-1 text-xs text-imss-gray dark:text-gray-500">Ingrese el número de días del préstamo.</p>
+                        <p class="mt-1 text-xs text-imss-gray dark:text-gray-500">
+                            Se calculará automáticamente el número de días de préstamo.
+                            <span id="dias-calculados" class="font-bold text-blue-600 dark:text-blue-400"></span>
+                        </p>
+                        <!-- Campo oculto para enviar los días calculados -->
+                        <input type="hidden" id="dias_prestamo" name="dias_prestamo" value="">
                     </div>
 
-                    <!-- NOTA: Campo de Folio ELIMINADO - Se genera automáticamente -->
-                    
                     <!-- Fecha de Emisión -->
                     <div class="col-span-1">
                         <label for="fecha" class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
-                            Fecha <span class="text-red-500">*</span>
+                            Fecha de Emisión <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
