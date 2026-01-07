@@ -135,22 +135,8 @@ require __DIR__ . '/layouts/head.php';
                         <p class="mt-1 text-xs text-imss-gray dark:text-gray-500">Ingrese el número de días del préstamo.</p>
                     </div>
 
-                    <!-- Folio -->
-                    <div class="col-span-1">
-                        <label for="folio" class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
-                            Folio del Documento <span class="text-red-500">*</span>
-                        </label>
-                        <div class="relative">
-                            <input type="text" 
-                                   id="folio" 
-                                   name="folio" 
-                                   placeholder="Ej. 2026/054"
-                                   required
-                                   class="block w-full px-3 py-2.5 border-imss-border focus:ring-primary focus:border-primary sm:text-sm rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white shadow-sm">
-                        </div>
-                        <p class="mt-1 text-xs text-imss-gray dark:text-gray-500">Ingrese el folio único del documento.</p>
-                    </div>
-
+                    <!-- NOTA: Campo de Folio ELIMINADO - Se genera automáticamente -->
+                    
                     <!-- Fecha de Emisión -->
                     <div class="col-span-1">
                         <label for="fecha" class="block text-sm font-medium text-imss-dark dark:text-gray-200 mb-1">
@@ -179,6 +165,18 @@ require __DIR__ . '/layouts/head.php';
                                name="lugar" 
                                value="Oaxaca de Juárez, Oaxaca"
                                class="block w-full px-3 py-2.5 border-imss-border focus:ring-primary focus:border-primary sm:text-sm rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white shadow-sm">
+                    </div>
+
+                    <!-- Nota informativa sobre folio automático -->
+                    <div class="col-span-1 md:col-span-2">
+                        <div class="p-4 bg-green-50 border-l-4 border-green-500 rounded-r-lg dark:bg-green-900/20">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-green-500">check_circle</span>
+                                <p class="text-sm text-green-800 dark:text-green-200">
+                                    <span class="font-bold">Folio Automático:</span> El sistema generará automáticamente el folio del documento al momento de guardarlo (formato: AÑO/NÚMERO).
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Área (Campo oculto con valor fijo) -->

@@ -1,5 +1,5 @@
 <?php
-// public/procesar_pdf.php - VERSIÓN MÚLTIPLES FORMATOS CON VALIDACIÓN DE FOLIO
+// public/procesar_pdf.php - VERSIÓN MÚLTIPLES FORMATOS CON FOLIO AUTOMÁTICO
 session_start();
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/generadores/GeneradorResguardoPDF.php';
@@ -9,6 +9,7 @@ use App\Infrastructure\Repository\MySQLTrabajadorRepository;
 use App\Infrastructure\Repository\MySQLBienRepository;
 use App\Infrastructure\Repository\MySQLMovimientoRepository;
 use App\Infrastructure\Repository\MySQLDetalleMovimientoRepository;
+use App\Infrastructure\Helper\FolioGenerator;
 use App\Domain\Entity\Movimiento;
 use App\Domain\Entity\Detalle_Movimiento;
 
@@ -21,6 +22,7 @@ $trabajadorRepo = new MySQLTrabajadorRepository($pdo);
 $bienRepo = new MySQLBienRepository($pdo);
 $movimientoRepo = new MySQLMovimientoRepository($pdo);
 $detalleRepo = new MySQLDetalleMovimientoRepository($pdo);
+$folioGenerator = new FolioGenerator($pdo);
 
 try {
     // Validar que haya tipos de movimiento seleccionados
@@ -28,20 +30,8 @@ try {
         throw new Exception("Debe seleccionar al menos un tipo de documento");
     }
     
-    // Validar folio obligatorio
-    if (empty($_POST['folio'])) {
-        throw new Exception("El folio es obligatorio");
-    }
-    
-    // Validar que el folio no exista
-    $folio = trim($_POST['folio']);
-    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM movimiento WHERE folio = :folio");
-    $stmt->execute(['folio' => $folio]);
-    $result = $stmt->fetch();
-    
-    if ($result['total'] > 0) {
-        throw new Exception("El folio '{$folio}' ya está registrado en el sistema. Por favor use uno diferente.");
-    }
+    // GENERAR FOLIO AUTOMÁTICAMENTE
+    $folio = $folioGenerator->generarFolioUnico();
     
     $tiposMovimiento = $_POST['tipos_movimiento'];
     $archivosGenerados = array();
@@ -106,9 +96,13 @@ try {
         }
         
         // 3. Preparar datos para el PDF
+        // Corregir problema de zona horaria
+        $fechaSeleccionada = $_POST['fecha'];
+        $timestamp = strtotime($fechaSeleccionada . ' 12:00:00'); // Agregar hora del mediodía para evitar problemas de zona horaria
+        
         $datosAdicionales = array(
             'folio' => $folio,
-            'lugar_fecha' => $_POST['lugar'] . ', ' . date('d \d\e F \d\e Y', strtotime($_POST['fecha'])),
+            'lugar_fecha' => $_POST['lugar'] . ', ' . date('d \d\e F \d\e Y', $timestamp),
             'recibe_resguardo' => $trabajadorRecibe->getNombre(),
             'entrega_resguardo' => $trabajadorEntrega->getNombre(),
             'cargo_entrega' => $trabajadorEntrega->getCargo(),
