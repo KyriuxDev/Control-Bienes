@@ -23,8 +23,8 @@ class GeneradorResguardoPDF {
             "10" => "octubre", "11" => "noviembre", "12" => "diciembre"
         );
         
-        $dia = date('j'); // 'j' devuelve el día sin ceros iniciales (1 al 31)
-        $mesNumero = date('n'); // 'n' devuelve el número de mes sin ceros (1 al 12)
+        $dia = date('j');
+        $mesNumero = date('n');
         $mesTexto = $meses[$mesNumero];
         $anio = date('Y');
         
@@ -51,41 +51,36 @@ class GeneradorResguardoPDF {
     }
     
     private function llenarDatos($trabajador, $bienes, $datosAdicionales) {
-        // Fuente normal (sin 'B') tamaño 7
         $this->pdf->SetFont('helvetica', '', 7);
         $this->pdf->SetTextColor(0, 0, 0);
 
-        // --- FECHA AUTOMÁTICA FORZADA ---
-        // Esto ignora cualquier valor previo y pone el formato con nombre de mes
+        // FECHA AUTOMÁTICA
         $fechaFormateada = $this->generarTextoFecha();
         $this->pdf->SetXY(112, 54.5); 
         $this->pdf->Write(8, $fechaFormateada);
         
-        // --- FOLIO ---
+        // FOLIO
         $this->pdf->SetXY(176, 53.5);
         $this->pdf->Write(10, $datosAdicionales['folio']); 
 
-        // --- DATOS TRABAJADOR ---
+        // DATOS TRABAJADOR
         $this->pdf->SetXY(55, 72); $this->pdf->Write(8, $trabajador->getInstitucion());
         $this->pdf->SetXY(55, 76); $this->pdf->Write(8, $trabajador->getNombre()); 
         $this->pdf->SetXY(55, 80); $this->pdf->Write(8, $trabajador->getCargo()); 
         $this->pdf->SetXY(55, 84); $this->pdf->Write(8, $trabajador->getAdscripcion());
         $this->pdf->SetXY(55, 88); $this->pdf->Write(8, $trabajador->getTelefono()); 
 
-        // --- CUERPO (CANTIDAD Y BIENES) ---
+        // CUERPO
         if (count($bienes) >= 2) {
             $this->pdf->SetXY(138, 109);
             $this->pdf->Write(5, "VER ANEXO ADJUNTO ( " . count($bienes) . " PARTIDAS )");
         } else {
             $bien = $bienes[0]['bien'];
-            // Compatibilidad PHP 5.6
             $cantidad = isset($bienes[0]['cantidad']) ? $bienes[0]['cantidad'] : '1';
 
-            // Cantidad (Ajustada a la izquierda de la descripción)
             $this->pdf->SetXY(30, 115); 
             $this->pdf->Write(5, $cantidad);
 
-            // Detalles del bien
             $this->pdf->SetXY(128, 109);
             $this->pdf->Write(5, $bien->getDescripcion());
             $this->pdf->SetXY(128, 115); 
@@ -94,42 +89,37 @@ class GeneradorResguardoPDF {
             $this->pdf->Write(13, $bien->getSerie());
         }
 
-        // --- FIRMAS ---
-        $this->pdf->SetXY(28, 228); $this->pdf->Write(8, $trabajador->getNombre()); 
-        $this->pdf->SetXY(118, 228); $this->pdf->Write(10, $datosAdicionales['recibe_resguardo']);
-
-        $this->pdf->SetXY(20, 232); $this->pdf->Write(8, $trabajador->getCargo());
-        $this->pdf->SetXY(111, 231); $this->pdf->Write(10, $datosAdicionales['entrega_resguardo']); 
+        // FIRMAS - Primera página
+        // Quien RECIBE (Resguardante - Izquierda)
+        $this->pdf->SetXY(28, 228); 
+        $this->pdf->Write(8, $trabajador->getNombre()); 
+        $this->pdf->SetXY(20, 232); 
+        $this->pdf->Write(8, $trabajador->getCargo());
+        
+        // Quien ENTREGA (Derecha)
+        $this->pdf->SetXY(118, 228); 
+        $this->pdf->Write(10, $datosAdicionales['entrega_resguardo']);
+        $this->pdf->SetXY(111, 232); 
+        $this->pdf->Write(10, $datosAdicionales['cargo_entrega']); 
     }
 
     private function generarAnexo($trabajador, $bienes, $datosAdicionales) {
         $this->pdf->AddPage();
-        // Configuración de márgenes para centrado
         $this->pdf->SetMargins(15, 20, 15);
-        $this->pdf->SetAutoPageBreak(true, 50); // Espacio suficiente para el bloque de firmas
+        $this->pdf->SetAutoPageBreak(true, 50);
 
-        // --- ENCABEZADO CENTRADO ---
+        // ENCABEZADO
         $this->pdf->SetFont('helvetica', 'B', 11);
-        // Usamos Cell con ancho 0 para que ocupe todo el ancho disponible entre márgenes
         $this->pdf->Cell(0, 10, "ANEXO DE RESGUARDO DE BIENES", 0, 1, 'C');
         
         $this->pdf->SetFont('helvetica', '', 9);
         $this->pdf->Cell(0, 5, "FOLIO: " . $datosAdicionales['folio'], 0, 1, 'C');
         $this->pdf->Ln(8);
 
-        // --- DATOS DEL RESGUARDANTE ---
-        //$this->pdf->SetFont('helvetica', '', 8);
-        //$this->pdf->Cell(30, 5, "RESGUARDANTE:", 0, 0, 'L');
-        //$this->pdf->Cell(0, 5, $trabajador->getNombre(), 0, 1, 'L');
-        //$this->pdf->Cell(30, 5, "CARGO:", 0, 0, 'L');
-        //$this->pdf->Cell(0, 5, $trabajador->getCargo(), 0, 1, 'L');
-        //$this->pdf->Ln(5);
-
-        // --- TABLA DE BIENES ---
+        // TABLA DE BIENES
         $this->pdf->SetFillColor(235, 235, 235);
         $this->pdf->SetFont('helvetica', '', 8);
         
-        // Anchos: Cant(15), Desc(65), Marca(34), Modelo(33), Serie(33) = 180mm total
         $w = array(15, 65, 34, 33, 33); 
         
         $this->pdf->Cell($w[0], 7, 'CANT.', 1, 0, 'C', 1);
@@ -143,7 +133,6 @@ class GeneradorResguardoPDF {
             $bien = $item['bien'];
             $cant = isset($item['cantidad']) ? $item['cantidad'] : '1';
 
-            // Altura dinámica según el texto de la descripción
             $nb = $this->pdf->getNumLines($bien->getDescripcion(), $w[1]);
             $h = 5 * $nb;
             if($h < 7) $h = 7; 
@@ -155,11 +144,10 @@ class GeneradorResguardoPDF {
             $this->pdf->MultiCell($w[4], $h, $bien->getSerie(), 1, 'L', 0, 1);
         }
 
-        // --- BLOQUE DE FIRMAS (NOMBRE Y CARGO) ---
+        // BLOQUE DE FIRMAS
         $this->pdf->Ln(20);
         $yFirmas = $this->pdf->GetY();
         
-        // Verificación de salto de página para firmas
         if ($yFirmas > 230) {
             $this->pdf->AddPage();
             $yFirmas = 40;
@@ -167,30 +155,30 @@ class GeneradorResguardoPDF {
 
         $this->pdf->SetFont('helvetica', '', 8);
         
-        // Columna Izquierda: Trabajador
+        // Columna Izquierda: Resguardante
         $this->pdf->SetXY(15, $yFirmas);
-        $this->pdf->Cell(80, 0, '', 'T', 0, 'C'); // Línea de firma
+        $this->pdf->Cell(80, 0, '', 'T', 0, 'C');
         $this->pdf->SetXY(15, $yFirmas + 2);
         $this->pdf->Cell(80, 4, "RESGUARDANTE", 0, 1, 'C');
         $this->pdf->SetX(15);
         $this->pdf->SetFont('helvetica', '', 7.5);
-        $this->pdf->Cell(80, 4, $trabajador->getNombre(), 0, 1, 'C'); // Nombre
+        $this->pdf->Cell(80, 4, $trabajador->getNombre(), 0, 1, 'C');
         $this->pdf->SetX(15);
         $this->pdf->SetFont('helvetica', '', 6.5);
-        $this->pdf->MultiCell(80, 3, $trabajador->getCargo(), 0, 'C'); // Cargo (MultiCell por si es largo)
+        $this->pdf->MultiCell(80, 3, $trabajador->getCargo(), 0, 'C');
 
         // Columna Derecha: Entrega
         $this->pdf->SetFont('helvetica', '', 8);
         $this->pdf->SetXY(115, $yFirmas);
-        $this->pdf->Cell(80, 0, '', 'T', 0, 'C'); // Línea de firma
+        $this->pdf->Cell(80, 0, '', 'T', 0, 'C');
         $this->pdf->SetXY(115, $yFirmas + 2);
         $this->pdf->Cell(80, 4, "ENTREGA", 0, 1, 'C');
         $this->pdf->SetX(115);
         $this->pdf->SetFont('helvetica', '', 7.5);
-        $this->pdf->Cell(80, 4, $datosAdicionales['entrega_resguardo'], 0, 1, 'C'); // Nombre entrega
+        $this->pdf->Cell(80, 4, $datosAdicionales['entrega_resguardo'], 0, 1, 'C');
         $this->pdf->SetX(115);
         $this->pdf->SetFont('helvetica', '', 6.5);
-        // Cargo de quien entrega (si existe en el array, si no ponemos un texto genérico)
+        // ✅ CORREGIDO: Usar cargo_entrega de datosAdicionales
         $cargoEntrega = isset($datosAdicionales['cargo_entrega']) ? $datosAdicionales['cargo_entrega'] : "DEPARTAMENTO DE BIENES Y SUMINISTROS";
         $this->pdf->MultiCell(80, 3, $cargoEntrega, 0, 'C');
     }

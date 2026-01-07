@@ -1,5 +1,5 @@
 <?php
-// public/vista_previa_pdf.php - CORREGIDO
+// public/vista_previa_pdf.php - VERSIÓN MÚLTIPLES FORMATOS
 session_start();
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/generadores/GeneradorResguardoPDF.php';
@@ -17,6 +17,14 @@ $trabajadorRepo = new MySQLTrabajadorRepository($pdo);
 $bienRepo = new MySQLBienRepository($pdo);
 
 try {
+    // Validar que haya tipos de movimiento seleccionados
+    if (!isset($_POST['tipos_movimiento']) || empty($_POST['tipos_movimiento'])) {
+        throw new Exception("Debe seleccionar al menos un tipo de documento");
+    }
+    
+    // Para vista previa, solo mostramos el primer tipo seleccionado
+    $tipoMovimiento = $_POST['tipos_movimiento'][0];
+    
     // 1. Obtener Trabajadores
     $trabajadorRecibe = $trabajadorRepo->obtenerPorMatricula($_POST['matricula_recibe']);
     $trabajadorEntrega = $trabajadorRepo->obtenerPorMatricula($_POST['matricula_entrega']);
@@ -28,7 +36,7 @@ try {
     // 2. Obtener Bienes
     $bienesSeleccionados = array();
     foreach ($_POST['bienes'] as $item) {
-        if (empty($item['id_bien'])) continue; // Skip empty rows
+        if (empty($item['id_bien'])) continue;
         
         $bienObj = $bienRepo->obtenerPorId($item['id_bien']);
         if ($bienObj) {
@@ -45,18 +53,17 @@ try {
     }
 
     // 3. Preparar datos adicionales
-    // ✅ CORREGIDO: Ahora están bien asignados
     $datosAdicionales = array(
         'folio' => isset($_POST['folio']) ? $_POST['folio'] : '',
         'lugar_fecha' => $_POST['lugar'] . ', ' . date('d \d\e F \d\e Y', strtotime($_POST['fecha'])),
-        'recibe_resguardo' => $trabajadorRecibe->getNombre(),  // ✅ Quien RECIBE
-        'entrega_resguardo' => $trabajadorEntrega->getNombre(), // ✅ Quien ENTREGA
-        'cargo_entrega' => $trabajadorEntrega->getCargo(),       // ✅ Cargo de quien entrega
-        'tipo_documento' => $_POST['tipo_movimiento']
+        'recibe_resguardo' => $trabajadorRecibe->getNombre(),
+        'entrega_resguardo' => $trabajadorEntrega->getNombre(),
+        'cargo_entrega' => $trabajadorEntrega->getCargo(),
+        'tipo_documento' => $tipoMovimiento
     );
 
-    // 4. Generar PDF temporal (usando el trabajador que recibe)
-    $rutaTemporal = __DIR__ . '/pdfs/preview_' . time() . '.pdf';
+    // 4. Generar PDF temporal
+    $rutaTemporal = __DIR__ . '/pdfs/preview_' . time() . '_' . uniqid() . '.pdf';
 
     // Asegurar que existe el directorio
     if (!file_exists(__DIR__ . '/pdfs')) {
@@ -68,7 +75,7 @@ try {
 
     // 5. Mostrar en el navegador (inline, no descarga)
     header('Content-Type: application/pdf');
-    header('Content-Disposition: inline; filename="Vista_Previa_' . str_replace(' ', '_', $_POST['tipo_movimiento']) . '.pdf"');
+    header('Content-Disposition: inline; filename="Vista_Previa_' . str_replace(' ', '_', $tipoMovimiento) . '.pdf"');
     header('Content-Length: ' . filesize($rutaTemporal));
     readfile($rutaTemporal);
 
@@ -106,3 +113,4 @@ try {
 }
 
 exit;
+?>
