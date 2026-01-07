@@ -410,6 +410,11 @@ require __DIR__ . '/layouts/head.php';
 </main>
 
 <?php require __DIR__ . '/partials/footer_actions.php'; ?>
+<script>
+    window.APP_DATA = {
+        bienesCatalogo: <?php echo json_encode($bienesCatalogo); ?>
+    };
+</script>
 <?php require __DIR__ . '/layouts/scripts.php'; ?>
 
 
