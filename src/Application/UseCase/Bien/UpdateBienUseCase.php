@@ -1,5 +1,5 @@
 <?php
-// src/Application/UseCase/Bien/UpdateBienUseCase.php
+// src/Application/UseCase/Bien/UpdateBienUseCase.php - VERSIÓN CORREGIDA
 namespace App\Application\UseCase\Bien;
 
 use App\Domain\Repository\BienRepositoryInterface;
@@ -16,14 +16,23 @@ class UpdateBienUseCase
 
     public function execute(BienDTO $dto)
     {
-        if (!$dto->id_bien) {
+        // VALIDACIÓN ESTRICTA: El ID debe existir y no estar vacío
+        if (!$dto->id_bien || $dto->id_bien === '' || $dto->id_bien === null) {
             throw new \Exception("ID de bien requerido para actualizar");
         }
 
         // Buscar el bien existente
         $bien = $this->bienRepository->obtenerPorId($dto->id_bien);
         if (!$bien) {
-            throw new \Exception("Bien no encontrado");
+            throw new \Exception("Bien no encontrado con ID: " . $dto->id_bien);
+        }
+
+        // Log para debugging
+        error_log("UpdateBienUseCase: Actualizando bien ID " . $dto->id_bien);
+
+        // Validar descripción (es obligatoria)
+        if (!$dto->descripcion || trim($dto->descripcion) === '') {
+            throw new \Exception("La descripción es obligatoria");
         }
 
         // Validar naturaleza si se proporciona
@@ -34,18 +43,20 @@ class UpdateBienUseCase
             }
         }
 
-        // Actualizar datos
-        if ($dto->naturaleza) $bien->setNaturaleza($dto->naturaleza);
-        if ($dto->marca) $bien->setMarca($dto->marca);
-        if ($dto->modelo) $bien->setModelo($dto->modelo);
-        if ($dto->serie) $bien->setSerie($dto->serie);
-        if ($dto->descripcion) $bien->setDescripcion($dto->descripcion);
+        // Actualizar datos - SIEMPRE actualizar todos los campos
+        $bien->setDescripcion(trim($dto->descripcion));
+        $bien->setNaturaleza($dto->naturaleza);
+        $bien->setMarca($dto->marca ? trim($dto->marca) : '');
+        $bien->setModelo($dto->modelo ? trim($dto->modelo) : '');
+        $bien->setSerie($dto->serie ? trim($dto->serie) : '');
 
         // Guardar
         try {
             $this->bienRepository->persist($bien);
+            error_log("UpdateBienUseCase: Bien actualizado exitosamente");
             return $dto;
         } catch (\Exception $e) {
+            error_log("UpdateBienUseCase ERROR: " . $e->getMessage());
             throw new \Exception("Error al actualizar bien: " . $e->getMessage());
         }
     }

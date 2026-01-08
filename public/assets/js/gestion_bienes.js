@@ -1,4 +1,4 @@
-// public/assets/js/gestion_bienes.js
+// public/assets/js/gestion_bienes.js - VERSIÓN FINAL CORREGIDA
 
 (function() {
     'use strict';
@@ -8,7 +8,6 @@
     let bienesFiltrados = [];
     let paginaActual = 1;
     const itemsPorPagina = 10;
-    let modoEdicion = false;
 
     // Inicializar cuando el DOM esté listo
     document.addEventListener('DOMContentLoaded', function() {
@@ -41,8 +40,18 @@
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             
+            console.log('📝 Formulario enviado');
+            
             const formData = new FormData(this);
-            const idBien = formData.get('id_bien');
+            
+            // CORRECCIÓN: Obtener el ID directamente del campo hidden
+            const idBienInput = document.getElementById('id_bien');
+            const idBien = idBienInput ? idBienInput.value : '';
+            
+            console.log('ID Bien del campo:', idBien);
+            console.log('ID Bien está vacío?', idBien === '');
+            console.log('ID Bien es null?', idBien === null);
+            console.log('ID Bien es undefined?', idBien === undefined);
             
             // Validar descripción
             const descripcion = formData.get('descripcion');
@@ -57,18 +66,46 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">refresh</span> Guardando...';
             
-            // Determinar la acción (crear o actualizar)
-            const url = idBien ? 'api/actualizar_bien.php' : 'api/guardar_bien.php';
+            // CORRECCIÓN CRÍTICA: Determinar la acción basándose en si el ID existe Y NO está vacío
+            let url, accion;
+            
+            if (idBien && idBien.trim() !== '' && idBien !== 'null' && idBien !== 'undefined') {
+                // HAY ID válido → ACTUALIZAR
+                url = 'api/actualizar_bien.php';
+                accion = 'actualizar';
+                console.log('✏️ MODO: ACTUALIZAR (ID existe:', idBien + ')');
+            } else {
+                // NO hay ID → CREAR NUEVO
+                url = 'api/guardar_bien.php';
+                accion = 'crear';
+                console.log('🆕 MODO: CREAR NUEVO (sin ID)');
+            }
+            
+            console.log('URL seleccionada:', url);
+            console.log('Acción:', accion);
             
             fetch(url, {
                 method: 'POST',
                 body: formData
             })
-            .then(r => r.json())
+            .then(r => {
+                console.log('Respuesta recibida:', r.status);
+                if (!r.ok) {
+                    throw new Error('Error HTTP: ' + r.status);
+                }
+                return r.json();
+            })
             .then(data => {
+                console.log('Datos recibidos:', data);
+                
                 if (data.success) {
                     cerrarModalBien();
-                    mostrarNotificacion(data.message || 'Operación exitosa', 'success');
+                    
+                    if (accion === 'crear') {
+                        mostrarNotificacion('Bien creado correctamente', 'success');
+                    } else {
+                        mostrarNotificacion('Bien actualizado correctamente', 'success');
+                    }
                     
                     // Recargar página para mostrar cambios
                     setTimeout(() => location.reload(), 1000);
@@ -78,7 +115,7 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                mostrarNotificacion('Error de conexión', 'error');
+                mostrarNotificacion('Error de conexión: ' + error.message, 'error');
             })
             .finally(() => {
                 submitBtn.disabled = false;
@@ -229,23 +266,41 @@
         return btn;
     }
 
-    // Funciones del modal
+    // FUNCIÓN PARA ABRIR MODAL EN MODO CREACIÓN
     window.abrirModalNuevoBien = function() {
-        modoEdicion = false;
+        console.log('🆕 Abriendo modal para NUEVO bien');
+        
         limpiarFormularioBien();
+        
+        // Cambiar título y botón para CREAR
         document.getElementById('modal-bien-title').innerHTML = '<span class="material-symbols-outlined">add</span> NUEVO REGISTRO DE BIEN';
         document.getElementById('btn-submit-bien').textContent = 'Crear Registro';
+        
         toggleModal('modal-bien');
     };
 
+    // FUNCIÓN PARA CERRAR MODAL
     window.cerrarModalBien = function() {
         limpiarFormularioBien();
         toggleModal('modal-bien');
     };
 
+    // FUNCIÓN PARA LIMPIAR FORMULARIO
     function limpiarFormularioBien() {
-        document.getElementById('form-bien').reset();
-        document.getElementById('id_bien').value = '';
+        console.log('🧹 Limpiando formulario');
+        
+        const form = document.getElementById('form-bien');
+        if (form) {
+            form.reset();
+        }
+        
+        // IMPORTANTE: Limpiar EXPLÍCITAMENTE el campo id_bien
+        const idBienInput = document.getElementById('id_bien');
+        if (idBienInput) {
+            idBienInput.value = '';
+            console.log('Campo id_bien limpiado:', idBienInput.value);
+        }
+        
         document.getElementById('descripcion').value = '';
         document.getElementById('naturaleza').value = 'BMNC';
         document.getElementById('marca').value = '';
@@ -253,6 +308,7 @@
         document.getElementById('serie').value = '';
     }
 
+    // FUNCIÓN PARA VER DETALLE
     window.verDetalleBien = function(id) {
         const row = document.querySelector(`.bien-row[data-id="${id}"]`);
         if (!row) return;
@@ -320,30 +376,47 @@
         toggleModal('modal-detalle-bien');
     };
 
+    // FUNCIÓN PARA EDITAR BIEN
     window.editarBien = function(id) {
+        console.log('✏️ Editando bien con ID:', id);
+        
         const row = document.querySelector(`.bien-row[data-id="${id}"]`);
         if (!row) {
             mostrarNotificacion('Bien no encontrado', 'error');
             return;
         }
         
-        modoEdicion = true;
+        // Primero limpiar el formulario
+        limpiarFormularioBien();
         
-        // Llenar formulario
-        document.getElementById('id_bien').value = id;
+        // IMPORTANTE: Establecer el ID en el campo oculto DESPUÉS de limpiar
+        const idBienInput = document.getElementById('id_bien');
+        if (idBienInput) {
+            idBienInput.value = id;
+            console.log('ID establecido en el campo:', idBienInput.value);
+        }
+        
+        // Llenar formulario con los datos actuales
         document.getElementById('descripcion').value = row.dataset.descripcion;
         document.getElementById('naturaleza').value = row.dataset.naturaleza;
         document.getElementById('marca').value = row.dataset.marca;
         document.getElementById('modelo').value = row.dataset.modelo;
         document.getElementById('serie').value = row.dataset.serie;
         
-        // Cambiar título y botón
+        console.log('Formulario llenado con datos del bien:', {
+            id: id,
+            descripcion: row.dataset.descripcion,
+            naturaleza: row.dataset.naturaleza
+        });
+        
+        // Cambiar título y botón para EDITAR
         document.getElementById('modal-bien-title').innerHTML = '<span class="material-symbols-outlined">edit</span> EDITAR BIEN';
         document.getElementById('btn-submit-bien').textContent = 'Actualizar Bien';
         
         toggleModal('modal-bien');
     };
 
+    // FUNCIÓN PARA ELIMINAR BIEN
     window.eliminarBien = function(id) {
         if (!confirm('¿Está seguro de que desea eliminar este bien?\n\nEsta acción no se puede deshacer y se verificará que el bien no esté asociado a ningún movimiento.')) {
             return;
@@ -381,6 +454,7 @@
         });
     };
 
+    // FUNCIÓN PARA EXPORTAR
     window.exportarBienes = function() {
         mostrarNotificacion('Funcionalidad de exportación en desarrollo', 'error');
     };
