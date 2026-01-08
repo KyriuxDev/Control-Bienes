@@ -1,5 +1,15 @@
 <?php
-// public/procesar_pdf.php - VERSIÓN CON CAMPOS INDEPENDIENTES
+// public/procesar_pdf.php - VERSIÓN CON DEBUGGING MEJORADO
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/php_errors.log');
+
+// Log inicial
+error_log("=== PROCESAR PDF INICIADO ===");
+error_log("Método: " . $_SERVER['REQUEST_METHOD']);
+error_log("POST data: " . print_r($_POST, true));
+
 session_start();
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/generadores/GeneradorResguardoPDF.php';
@@ -16,31 +26,115 @@ use App\Domain\Entity\Movimiento;
 use App\Domain\Entity\Detalle_Movimiento;
 use setasign\Fpdi\Tcpdf\Fpdi;
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
+// Función para mostrar error HTML
+function mostrarError($mensaje, $detalles = '') {
+    error_log("ERROR: $mensaje");
+    if ($detalles) {
+        error_log("Detalles: $detalles");
+    }
+    
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Error</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white p-8 rounded-lg shadow-lg max-w-2xl w-full">
+            <div class="flex items-center gap-3 text-red-600 mb-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <h1 class="text-xl font-bold">Error al Generar PDF</h1>
+            </div>
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                <p class="text-red-800 font-medium">' . htmlspecialchars($mensaje) . '</p>
+            </div>';
+    
+    if ($detalles) {
+        echo '<details class="mb-4">
+                <summary class="cursor-pointer text-sm font-semibold text-gray-600 hover:text-gray-800">Ver detalles técnicos</summary>
+                <pre class="mt-2 p-4 bg-gray-100 text-xs overflow-auto max-h-64">' . htmlspecialchars($detalles) . '</pre>
+              </details>';
+    }
+    
+    echo '<div class="flex gap-3">
+                <button onclick="window.history.back()" class="flex-1 bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 font-semibold">
+                    ← Volver al Formulario
+                </button>
+                <a href="test_pdf.php" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 text-center font-semibold">
+                    Ejecutar Diagnóstico
+                </a>
+            </div>
+        </div>
+    </body>
+    </html>';
+    exit;
+}
 
-$db = Database::getInstance();
-$pdo = $db->getConnection();
-
-$trabajadorRepo = new MySQLTrabajadorRepository($pdo);
-$bienRepo = new MySQLBienRepository($pdo);
-$movimientoRepo = new MySQLMovimientoRepository($pdo);
-$detalleRepo = new MySQLDetalleMovimientoRepository($pdo);
-$folioGenerator = new FolioGenerator($pdo);
+// Verificar método POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    mostrarError('Método no permitido', 'Solo se aceptan peticiones POST');
+}
 
 try {
-    // Validar que haya tipos de movimiento seleccionados
-    if (!isset($_POST['tipos_movimiento']) || empty($_POST['tipos_movimiento'])) {
-        throw new Exception("Debe seleccionar al menos un tipo de documento");
+    // Verificar que los archivos de plantillas existan
+    $plantillas = [
+        'Resguardo' => __DIR__ . '/../templates/resguardo.pdf',
+        'Prestamo' => __DIR__ . '/../templates/prestamo.pdf',
+        'Constancia de salida' => __DIR__ . '/../templates/salidaBien.pdf'
+    ];
+    
+    foreach ($plantillas as $tipo => $ruta) {
+        if (!file_exists($ruta)) {
+            mostrarError(
+                "Plantilla PDF no encontrada para: $tipo",
+                "Ruta esperada: $ruta\nVerifique que el archivo existe y tiene los permisos correctos."
+            );
+        }
     }
+    
+    $db = Database::getInstance();
+    $pdo = $db->getConnection();
+
+    $trabajadorRepo = new MySQLTrabajadorRepository($pdo);
+    $bienRepo = new MySQLBienRepository($pdo);
+    $movimientoRepo = new MySQLMovimientoRepository($pdo);
+    $detalleRepo = new MySQLDetalleMovimientoRepository($pdo);
+    $folioGenerator = new FolioGenerator($pdo);
+
+    // Validar datos del formulario
+    if (!isset($_POST['tipos_movimiento']) || empty($_POST['tipos_movimiento'])) {
+        mostrarError("Debe seleccionar al menos un tipo de documento");
+    }
+    
+    if (empty($_POST['matricula_recibe'])) {
+        mostrarError("Debe seleccionar el trabajador que recibe");
+    }
+    
+    if (empty($_POST['matricula_entrega'])) {
+        mostrarError("Debe seleccionar el trabajador que entrega");
+    }
+    
+    if (!isset($_POST['bienes']) || empty($_POST['bienes'])) {
+        mostrarError("Debe agregar al menos un bien");
+    }
+    
+    error_log("Validaciones iniciales completadas");
     
     // GENERAR FOLIO AUTOMÁTICAMENTE
     $folio = $folioGenerator->generarFolioUnico();
+    error_log("Folio generado: $folio");
     
     $tiposMovimiento = $_POST['tipos_movimiento'];
     $archivosTemporales = array();
     
     // Iniciar transacción
     $pdo->beginTransaction();
+    error_log("Transacción iniciada");
     
     // Obtener trabajadores
     $trabajadorRecibe = $trabajadorRepo->obtenerPorMatricula($_POST['matricula_recibe']);
@@ -50,8 +144,10 @@ try {
         throw new Exception("Error: Trabajadores no encontrados");
     }
     
+    error_log("Trabajadores obtenidos correctamente");
+    
     // OBTENER ESTADO GLOBAL
-    $estadoGeneral = 'Buenas condiciones'; // Por defecto
+    $estadoGeneral = 'Buenas condiciones';
     
     if (isset($_POST['estado_general'])) {
         if ($_POST['estado_general'] === 'Otro' && isset($_POST['estado_otro']) && !empty($_POST['estado_otro'])) {
@@ -66,6 +162,7 @@ try {
     
     // Preparar bienes CON DATOS GLOBALES
     $bienesSeleccionados = array();
+    $bienesCount = 0;
     foreach ($_POST['bienes'] as $item) {
         if (empty($item['id_bien'])) continue;
         
@@ -74,26 +171,37 @@ try {
             $bienesSeleccionados[] = array(
                 'bien' => $bienObj,
                 'cantidad' => isset($item['cantidad']) ? intval($item['cantidad']) : 1,
-                'estado_fisico' => $estadoGeneral, // Usar estado global
-                'sujeto_devolucion' => $sujetoDevolucionGlobal // Usar opción global
+                'estado_fisico' => $estadoGeneral,
+                'sujeto_devolucion' => $sujetoDevolucionGlobal
             );
+            $bienesCount++;
         }
     }
     
     if (empty($bienesSeleccionados)) {
-        throw new Exception("Debe seleccionar al menos un bien");
+        throw new Exception("Debe seleccionar al menos un bien válido");
     }
     
-    // Debug logging
-    error_log("=== DEBUG PROCESAR PDF (CAMPOS INDEPENDIENTES) ===");
-    error_log("Bienes seleccionados: " . count($bienesSeleccionados));
-    error_log("Estado global: " . $estadoGeneral);
-    error_log("Sujeto devolución global: " . $sujetoDevolucionGlobal);
-    error_log("Fecha devolución préstamo: " . (isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : 'no establecida'));
-    error_log("Fecha devolución constancia: " . (isset($_POST['fecha_devolucion_constancia']) ? $_POST['fecha_devolucion_constancia'] : 'no establecida'));
+    error_log("Bienes procesados: $bienesCount");
+    
+    // Asegurar que existe el directorio de PDFs
+    $directorioBase = __DIR__ . '/pdfs';
+    if (!file_exists($directorioBase)) {
+        if (!mkdir($directorioBase, 0775, true)) {
+            throw new Exception("No se pudo crear el directorio de PDFs: $directorioBase");
+        }
+        error_log("Directorio de PDFs creado: $directorioBase");
+    }
+    
+    // Verificar que el directorio es escribible
+    if (!is_writable($directorioBase)) {
+        throw new Exception("El directorio de PDFs no es escribible: $directorioBase");
+    }
     
     // Generar cada tipo de documento seleccionado
     foreach ($tiposMovimiento as $tipoMovimiento) {
+        error_log("Generando PDF para: $tipoMovimiento");
+        
         // 1. Crear movimiento para este tipo
         $movimiento = new Movimiento();
         $movimiento->setTipoMovimiento($tipoMovimiento)
@@ -107,8 +215,9 @@ try {
         
         $movimientoRepo->persist($movimiento);
         $idMovimiento = $movimiento->getIdMovimiento();
+        error_log("Movimiento creado con ID: $idMovimiento");
         
-        // 2. Crear detalles para este movimiento CON DATOS GLOBALES
+        // 2. Crear detalles para este movimiento
         foreach ($_POST['bienes'] as $item) {
             if (empty($item['id_bien'])) continue;
             
@@ -116,11 +225,13 @@ try {
             $detalle->setIdMovimiento($idMovimiento)
                    ->setIdBien($item['id_bien'])
                    ->setCantidad(isset($item['cantidad']) ? intval($item['cantidad']) : 1)
-                   ->setEstadoFisico($estadoGeneral) // Usar estado global
-                   ->setSujetoDevolucion($sujetoDevolucionGlobal); // Usar opción global
+                   ->setEstadoFisico($estadoGeneral)
+                   ->setSujetoDevolucion($sujetoDevolucionGlobal);
             
             $detalleRepo->persist($detalle);
         }
+        
+        error_log("Detalles del movimiento creados");
         
         // 3. Preparar datos para el PDF
         $datosAdicionales = array(
@@ -135,26 +246,19 @@ try {
             'responsable_control_administrativo' => $trabajadorEntrega->getNombre(),
             'matricula_administrativo' => $trabajadorEntrega->getMatricula(),
             'matricula_coordinacion' => $trabajadorRecibe->getMatricula(),
-            'estado_general' => $estadoGeneral, // Estado global
-            'sujeto_devolucion_global' => $sujetoDevolucionGlobal, // Opción global
-            // Datos adicionales para Préstamo
+            'estado_general' => $estadoGeneral,
+            'sujeto_devolucion_global' => $sujetoDevolucionGlobal,
             'dias_prestamo' => isset($_POST['dias_prestamo']) ? intval($_POST['dias_prestamo']) : null,
             'fecha_devolucion_prestamo' => isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : null,
-            // Datos adicionales para Constancia de Salida
             'fecha_devolucion_constancia' => isset($_POST['fecha_devolucion_constancia']) ? $_POST['fecha_devolucion_constancia'] : null
         );
         
         // 4. Generar PDF temporal
-        $directorioBase = __DIR__ . '/pdfs';
-        
-        // Asegurar que existe el directorio base
-        if (!file_exists($directorioBase)) {
-            mkdir($directorioBase, 0775, true);
-        }
-        
         $nombreArchivo = strtolower(str_replace(' ', '_', $tipoMovimiento)) . '_' . 
                          time() . '_' . uniqid() . '.pdf';
         $rutaTemporal = $directorioBase . '/' . $nombreArchivo;
+        
+        error_log("Generando PDF en: $rutaTemporal");
         
         // Seleccionar generador según el tipo
         if ($tipoMovimiento === 'Resguardo') {
@@ -163,9 +267,23 @@ try {
             $generador = new GeneradorSalidaPDF();
         } elseif ($tipoMovimiento === 'Prestamo') {
             $generador = new GeneradorPrestamoPDF();
+        } else {
+            throw new Exception("Tipo de movimiento no reconocido: $tipoMovimiento");
         }
         
         $generador->generar($trabajadorRecibe, $bienesSeleccionados, $datosAdicionales, $rutaTemporal);
+        
+        // Verificar que el PDF se generó
+        if (!file_exists($rutaTemporal)) {
+            throw new Exception("El PDF no se generó correctamente: $rutaTemporal");
+        }
+        
+        $tamano = filesize($rutaTemporal);
+        error_log("PDF generado exitosamente. Tamaño: $tamano bytes");
+        
+        if ($tamano < 100) {
+            throw new Exception("El PDF generado está vacío o corrupto (tamaño: $tamano bytes)");
+        }
         
         $archivosTemporales[] = array(
             'tipo' => $tipoMovimiento,
@@ -176,13 +294,24 @@ try {
     
     // Commit de todas las transacciones
     $pdo->commit();
+    error_log("Transacción completada exitosamente");
     
     // Si solo hay un archivo, descargarlo directamente
     if (count($archivosTemporales) === 1) {
         $archivo = $archivosTemporales[0];
+        
+        error_log("Enviando archivo único al navegador");
+        
+        // Limpiar cualquier salida previa
+        if (ob_get_level()) ob_end_clean();
+        
         header('Content-Type: application/pdf');
         header('Content-Disposition: attachment; filename="' . $archivo['tipo'] . '_' . $folio . '.pdf"');
         header('Content-Length: ' . filesize($archivo['ruta']));
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
         readfile($archivo['ruta']);
         
         register_shutdown_function(function() use ($archivo) {
@@ -192,16 +321,15 @@ try {
             }
         });
     } else {
-        // Si hay múltiples archivos, combinarlos en un solo PDF
-        error_log("=== COMBINANDO MÚLTIPLES PDFs ===");
-        error_log("Número de archivos a combinar: " . count($archivosTemporales));
+        // Si hay múltiples archivos, combinarlos
+        error_log("Combinando múltiples PDFs: " . count($archivosTemporales));
         
         $pdfCombinado = new Fpdi();
         $pdfCombinado->setPrintHeader(false);
         $pdfCombinado->setPrintFooter(false);
         
         foreach ($archivosTemporales as $archivo) {
-            error_log("Procesando archivo: " . $archivo['ruta']);
+            error_log("Añadiendo archivo al PDF combinado: " . $archivo['ruta']);
             
             if (!file_exists($archivo['ruta'])) {
                 error_log("ERROR: Archivo no existe: " . $archivo['ruta']);
@@ -209,11 +337,9 @@ try {
             }
             
             try {
-                // Obtener el número de páginas del PDF
                 $numPaginas = $pdfCombinado->setSourceFile($archivo['ruta']);
                 error_log("Archivo tiene $numPaginas páginas");
                 
-                // Importar cada página
                 for ($i = 1; $i <= $numPaginas; $i++) {
                     $pdfCombinado->AddPage();
                     $templateId = $pdfCombinado->importPage($i);
@@ -221,43 +347,27 @@ try {
                 }
             } catch (Exception $e) {
                 error_log("ERROR al procesar archivo: " . $e->getMessage());
+                throw $e;
             }
         }
         
-        // Guardar PDF combinado - RUTA SIMPLE SIN SUBDIRECTORIOS
-        $directorioBase = __DIR__ . '/pdfs';
-        
-        // Limpiar el folio para usarlo como nombre de archivo (sin barras)
         $folioLimpio = str_replace('/', '_', $folio);
         $nombreCombinado = 'docs_' . $folioLimpio . '_' . time() . '.pdf';
+        $rutaCombinada = $directorioBase . '/' . $nombreCombinado;
         
-        // Usar ruta absoluta real
-        $rutaAbsoluta = realpath($directorioBase);
-        if ($rutaAbsoluta === false) {
-            throw new Exception("No se puede obtener la ruta absoluta de: " . $directorioBase);
-        }
+        error_log("Guardando PDF combinado en: $rutaCombinada");
         
-        $rutaCombinada = $rutaAbsoluta . '/' . $nombreCombinado;
-        
-        error_log("Guardando PDF combinado en: " . $rutaCombinada);
-        error_log("Directorio existe: " . (file_exists($rutaAbsoluta) ? 'SI' : 'NO'));
-        error_log("Directorio escribible: " . (is_writable($rutaAbsoluta) ? 'SI' : 'NO'));
-        
-        // Intentar guardar
-        try {
-            $pdfCombinado->Output($rutaCombinada, 'F');
-            error_log("PDF combinado guardado exitosamente");
-        } catch (Exception $e) {
-            error_log("ERROR al guardar PDF: " . $e->getMessage());
-            throw new Exception("Error al guardar PDF combinado: " . $e->getMessage());
-        }
+        $pdfCombinado->Output($rutaCombinada, 'F');
         
         if (!file_exists($rutaCombinada)) {
-            throw new Exception("El archivo PDF no se creó correctamente en: " . $rutaCombinada);
+            throw new Exception("El archivo PDF combinado no se creó correctamente");
         }
         
-        // Descargar PDF combinado
-        error_log("Enviando archivo al navegador: " . basename($rutaCombinada));
+        $tamanoCombinado = filesize($rutaCombinada);
+        error_log("PDF combinado guardado. Tamaño: $tamanoCombinado bytes");
+        
+        // Limpiar cualquier salida previa
+        if (ob_get_level()) ob_end_clean();
         
         header('Content-Type: application/pdf');
         header('Content-Disposition: attachment; filename="Documentos_' . $folioLimpio . '.pdf"');
@@ -268,7 +378,6 @@ try {
         
         readfile($rutaCombinada);
         
-        // Limpiar archivos temporales
         register_shutdown_function(function() use ($archivosTemporales, $rutaCombinada) {
             sleep(5);
             foreach ($archivosTemporales as $archivo) {
@@ -283,37 +392,19 @@ try {
     }
     
 } catch (Exception $e) {
-    if ($pdo->inTransaction()) {
+    if ($pdo && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
     
-    error_log("ERROR en procesar_pdf.php: " . $e->getMessage());
+    error_log("EXCEPTION: " . $e->getMessage());
     error_log("Stack trace: " . $e->getTraceAsString());
     
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Error</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-    </head>
-    <body class="bg-gray-100 flex items-center justify-center min-h-screen">
-        <div class="bg-white p-8 rounded-lg shadow-lg max-w-md">
-            <div class="flex items-center gap-3 text-red-600 mb-4">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <h1 class="text-xl font-bold">Error al Generar PDF</h1>
-            </div>
-            <p class="text-gray-700 mb-4">' . htmlspecialchars($e->getMessage()) . '</p>
-            <button onclick="window.history.back()" class="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700">
-                Volver al Formulario
-            </button>
-        </div>
-    </body>
-    </html>';
+    mostrarError(
+        $e->getMessage(),
+        "Archivo: " . $e->getFile() . "\n" .
+        "Línea: " . $e->getLine() . "\n\n" .
+        $e->getTraceAsString()
+    );
 }
 
 exit;

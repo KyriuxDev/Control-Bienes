@@ -1,5 +1,5 @@
 <?php
-// public/generador_documentos.php - VERSIÓN CON CAMPOS INDEPENDIENTES
+// public/generador_documentos.php - VERSIÓN CORREGIDA
 session_start();
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -34,17 +34,9 @@ require __DIR__ . '/layouts/head.php';
             <h2 class="text-3xl font-bold text-imss-dark dark:text-white tracking-tight">Generación de Documentos</h2>
             <p class="mt-2 text-imss-gray dark:text-gray-400 ">Complete el formulario para emitir constancias de salida, resguardos o préstamos de bienes institucionales.</p>
         </div>
-        <!-- Page Heading 
-        <div class="flex gap-2">
-            <button type="button" class="inline-flex items-center px-4 py-2 text-sm font-medium text-primary bg-white border border-imss-border rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:bg-gray-800 dark:border-gray-700 dark:text-green-400 dark:hover:bg-gray-700">
-                <span class="material-symbols-outlined text-lg mr-2">help</span>
-                Guía de Usuario
-            </button>
-        </div>
-        -->
     </div>
 
-    <!-- Form Content -->
+    <!-- Form Content - ACTION CORREGIDO -->
     <form id="document-form" action="procesar_pdf.php" method="POST" class="space-y-8 mt-2">
         
         <!-- SECTION 1: DATOS GENERALES -->

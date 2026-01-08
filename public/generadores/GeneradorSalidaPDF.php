@@ -210,12 +210,12 @@ class GeneradorSalidaPDF {
     private function escribirDescripcionesBienes($bienes) {
         $this->pdf->SetFont('helvetica', '', 7);
         
-        $y = 98;
+        $y = 97;
         $width = 100;
         $lineHeight = 5;
 
         if (count($bienes) > 5) {
-            $this->pdf->SetXY($x, $y + 2);
+            $this->pdf->SetXY(100, $y + 2);
             $this->pdf->SetFont('helvetica', '', 7);
             $this->pdf->MultiCell($width, $lineHeight, 'Ver Anexo Adjunto (' . count($bienes) . ' partidas)', 0, 'L');
             return;

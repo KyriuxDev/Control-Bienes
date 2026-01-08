@@ -1,9 +1,16 @@
 <?php
-// public/vista_previa_pdf.php - VERSIÓN CON CAMPOS INDEPENDIENTES
-session_start();
+// public/vista_previa_pdf.php - VERSIÓN CON DEBUGGING MEJORADO
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/php_errors.log');
+
+// Log inicial
+error_log("=== VISTA PREVIA PDF INICIADA ===");
+error_log("Método: " . $_SERVER['REQUEST_METHOD']);
+error_log("POST data: " . print_r($_POST, true));
+
+session_start();
 
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/generadores/GeneradorResguardoPDF.php';
@@ -16,26 +23,61 @@ use App\Infrastructure\Repository\MySQLBienRepository;
 use App\Infrastructure\Helper\FolioGenerator;
 use setasign\Fpdi\Tcpdf\Fpdi;
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+// Función para mostrar error HTML
+function mostrarError($mensaje, $detalles = '') {
+    error_log("ERROR VISTA PREVIA: $mensaje");
+    if ($detalles) {
+        error_log("Detalles: $detalles");
+    }
+    
     header('Content-Type: text/html; charset=utf-8');
     echo '<!DOCTYPE html>
     <html lang="es">
     <head>
         <meta charset="UTF-8">
-        <title>Error</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Error en Vista Previa</title>
         <script src="https://cdn.tailwindcss.com"></script>
     </head>
-    <body class="bg-gray-100 flex items-center justify-center min-h-screen">
-        <div class="bg-white p-8 rounded-lg shadow-lg max-w-md">
-            <h1 class="text-xl font-bold text-red-600 mb-4">Método no permitido</h1>
-            <p class="text-gray-700">Solo se aceptan peticiones POST.</p>
-            <button onclick="window.close()" class="mt-4 w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700">
-                Cerrar Ventana
-            </button>
+    <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white p-8 rounded-lg shadow-lg max-w-2xl w-full">
+            <div class="flex items-center gap-3 text-red-600 mb-4">
+                <svg class="w-8 h-8 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <h1 class="text-xl font-bold">Error en Vista Previa</h1>
+            </div>
+            <div class="mb-4">
+                <p class="text-gray-700 mb-2"><strong>Mensaje:</strong></p>
+                <p class="text-gray-600 text-sm bg-red-50 border-l-4 border-red-500 p-3 rounded">' . htmlspecialchars($mensaje) . '</p>
+            </div>';
+    
+    if ($detalles) {
+        echo '<details class="mb-4">
+                <summary class="cursor-pointer text-sm font-semibold text-gray-600 hover:text-gray-800">Ver detalles técnicos</summary>
+                <pre class="mt-2 p-4 bg-gray-100 text-xs overflow-auto max-h-64">' . htmlspecialchars($detalles) . '</pre>
+              </details>';
+    }
+    
+    echo '<div class="flex gap-2">
+                <button onclick="window.close()" class="flex-1 bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 transition">
+                    Cerrar
+                </button>
+                <button onclick="window.history.back()" class="flex-1 bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition">
+                    Volver
+                </button>
+                <a href="test_pdf.php" target="_blank" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 text-center">
+                    Diagnóstico
+                </a>
+            </div>
         </div>
     </body>
     </html>';
     exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    mostrarError('Método no permitido', 'Solo se aceptan peticiones POST.');
 }
 
 try {
@@ -61,8 +103,11 @@ try {
         $_POST['lugar'] = 'Oaxaca de Juárez, Oaxaca';
     }
     
-    // GENERAR FOLIO TEMPORAL PARA VISTA PREVIA (con prefijo PREVIEW)
-    $folio = $folioGenerator->generarFolio();
+    error_log("Validaciones iniciales completadas");
+    
+    // GENERAR FOLIO TEMPORAL PARA VISTA PREVIA
+    $folio = 'PREVIEW-' . $folioGenerator->generarFolio();
+    error_log("Folio temporal generado: $folio");
     
     $tiposMovimiento = $_POST['tipos_movimiento'];
     
@@ -81,9 +126,11 @@ try {
     if (!$trabajadorEntrega) {
         throw new Exception("Trabajador que entrega no encontrado (matrícula: {$_POST['matricula_entrega']})");
     }
+    
+    error_log("Trabajadores obtenidos correctamente");
 
     // 2. OBTENER ESTADO GLOBAL
-    $estadoGeneral = 'Buenas condiciones'; // Por defecto
+    $estadoGeneral = 'Buenas condiciones';
     
     if (isset($_POST['estado_general'])) {
         if ($_POST['estado_general'] === 'Otro' && isset($_POST['estado_otro']) && !empty($_POST['estado_otro'])) {
@@ -110,8 +157,8 @@ try {
             $bienesSeleccionados[] = array(
                 'bien' => $bienObj,
                 'cantidad' => isset($item['cantidad']) ? intval($item['cantidad']) : 1,
-                'estado_fisico' => $estadoGeneral, // Usar estado global
-                'sujeto_devolucion' => $sujetoDevolucionGlobal // Usar opción global
+                'estado_fisico' => $estadoGeneral,
+                'sujeto_devolucion' => $sujetoDevolucionGlobal
             );
         }
     }
@@ -120,14 +167,8 @@ try {
     if (empty($bienesSeleccionados)) {
         throw new Exception("Debe seleccionar al menos un bien válido");
     }
-
-    // Debug logging
-    error_log("=== DEBUG VISTA PREVIA (CAMPOS INDEPENDIENTES) ===");
-    error_log("Bienes seleccionados: " . count($bienesSeleccionados));
-    error_log("Estado global: " . $estadoGeneral);
-    error_log("Sujeto devolución global: " . $sujetoDevolucionGlobal);
-    error_log("Fecha devolución préstamo: " . (isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : 'no establecida'));
-    error_log("Fecha devolución constancia: " . (isset($_POST['fecha_devolucion_constancia']) ? $_POST['fecha_devolucion_constancia'] : 'no establecida'));
+    
+    error_log("Bienes procesados: " . count($bienesSeleccionados));
 
     // 5. Preparar datos adicionales
     $datosAdicionales = array(
@@ -137,31 +178,36 @@ try {
         'recibe_resguardo' => $trabajadorRecibe->getNombre(),
         'entrega_resguardo' => $trabajadorEntrega->getNombre(),
         'cargo_entrega' => $trabajadorEntrega->getCargo(),
-        'tipo_documento' => '', // Se llenará por cada tipo
+        'tipo_documento' => '',
         'departamento_per' => $trabajadorRecibe->getAdscripcion(),
         'responsable_control_administrativo' => $trabajadorEntrega->getNombre(),
         'matricula_administrativo' => $trabajadorEntrega->getMatricula(),
         'matricula_coordinacion' => $trabajadorRecibe->getMatricula(),
-        'estado_general' => $estadoGeneral, // Estado global
-        'sujeto_devolucion_global' => $sujetoDevolucionGlobal, // Opción global
-        // Datos adicionales para Préstamo
+        'estado_general' => $estadoGeneral,
+        'sujeto_devolucion_global' => $sujetoDevolucionGlobal,
         'dias_prestamo' => isset($_POST['dias_prestamo']) ? intval($_POST['dias_prestamo']) : null,
         'fecha_devolucion_prestamo' => isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : null,
-        // Datos adicionales para Constancia de Salida
         'fecha_devolucion_constancia' => isset($_POST['fecha_devolucion_constancia']) ? $_POST['fecha_devolucion_constancia'] : null
     );
 
     // 6. Generar PDFs temporales
     $archivosTemporales = array();
     
-    if (!file_exists(__DIR__ . '/pdfs')) {
-        if (!mkdir(__DIR__ . '/pdfs', 0775, true)) {
-            throw new Exception("No se pudo crear el directorio de PDFs");
+    $directorioBase = __DIR__ . '/pdfs';
+    if (!file_exists($directorioBase)) {
+        if (!mkdir($directorioBase, 0775, true)) {
+            throw new Exception("No se pudo crear el directorio de PDFs: $directorioBase");
         }
+    }
+    
+    if (!is_writable($directorioBase)) {
+        throw new Exception("El directorio de PDFs no es escribible: $directorioBase");
     }
 
     foreach ($tiposMovimiento as $tipoMovimiento) {
-        $rutaTemporal = __DIR__ . '/pdfs/preview_' . strtolower(str_replace(' ', '_', $tipoMovimiento)) . '_' . time() . '_' . uniqid() . '.pdf';
+        error_log("Generando vista previa para: $tipoMovimiento");
+        
+        $rutaTemporal = $directorioBase . '/preview_' . strtolower(str_replace(' ', '_', $tipoMovimiento)) . '_' . time() . '_' . uniqid() . '.pdf';
         
         // Seleccionar generador según el tipo
         if ($tipoMovimiento === 'Resguardo') {
@@ -171,7 +217,7 @@ try {
         } elseif ($tipoMovimiento === 'Prestamo') {
             $generador = new GeneradorPrestamoPDF();
         } else {
-            continue; // Tipo no válido
+            continue;
         }
         
         $generador->generar($trabajadorRecibe, $bienesSeleccionados, $datosAdicionales, $rutaTemporal);
@@ -180,18 +226,28 @@ try {
             throw new Exception("Error al generar el PDF temporal para " . $tipoMovimiento);
         }
         
+        $tamano = filesize($rutaTemporal);
+        error_log("PDF generado: $rutaTemporal (tamaño: $tamano bytes)");
+        
+        if ($tamano < 100) {
+            throw new Exception("El PDF generado está vacío (tamaño: $tamano bytes)");
+        }
+        
         $archivosTemporales[] = array(
             'tipo' => $tipoMovimiento,
             'ruta' => $rutaTemporal,
             'nombre' => basename($rutaTemporal)
         );
-        
-        error_log("PDF generado para {$tipoMovimiento}: " . $rutaTemporal);
     }
 
     // 7. Si hay un solo archivo, mostrarlo directamente
     if (count($archivosTemporales) === 1) {
         $archivo = $archivosTemporales[0];
+        
+        error_log("Enviando archivo único para vista previa");
+        
+        // Limpiar cualquier salida previa
+        if (ob_get_level()) ob_end_clean();
         
         header('Content-Type: application/pdf');
         header('Content-Disposition: inline; filename="Vista_Previa_' . str_replace(' ', '_', $archivo['tipo']) . '.pdf"');
@@ -202,7 +258,6 @@ try {
         
         readfile($archivo['ruta']);
         
-        // Limpiar después de enviar
         register_shutdown_function(function() use ($archivo) {
             if (file_exists($archivo['ruta'])) {
                 sleep(2);
@@ -211,15 +266,14 @@ try {
         });
     } else {
         // Si hay múltiples archivos, combinarlos
-        error_log("=== COMBINANDO MÚLTIPLES PDFs PARA VISTA PREVIA ===");
-        error_log("Número de archivos: " . count($archivosTemporales));
+        error_log("Combinando múltiples PDFs para vista previa: " . count($archivosTemporales));
         
         $pdfCombinado = new Fpdi();
         $pdfCombinado->setPrintHeader(false);
         $pdfCombinado->setPrintFooter(false);
         
         foreach ($archivosTemporales as $archivo) {
-            error_log("Procesando: " . $archivo['ruta']);
+            error_log("Añadiendo archivo: " . $archivo['ruta']);
             
             if (!file_exists($archivo['ruta'])) {
                 error_log("ERROR: Archivo no existe");
@@ -237,15 +291,25 @@ try {
                 }
             } catch (Exception $e) {
                 error_log("ERROR al combinar: " . $e->getMessage());
+                throw $e;
             }
         }
         
-        $rutaCombinada = __DIR__ . '/pdfs/preview_combined_' . time() . '_' . uniqid() . '.pdf';
+        $rutaCombinada = $directorioBase . '/preview_combined_' . time() . '_' . uniqid() . '.pdf';
+        
+        error_log("Guardando PDF combinado: $rutaCombinada");
         $pdfCombinado->Output($rutaCombinada, 'F');
         
-        error_log("PDF combinado guardado: " . $rutaCombinada);
+        if (!file_exists($rutaCombinada)) {
+            throw new Exception("No se pudo guardar el PDF combinado");
+        }
         
-        // Mostrar PDF combinado
+        $tamanoCombinado = filesize($rutaCombinada);
+        error_log("PDF combinado guardado (tamaño: $tamanoCombinado bytes)");
+        
+        // Limpiar cualquier salida previa
+        if (ob_get_level()) ob_end_clean();
+        
         header('Content-Type: application/pdf');
         header('Content-Disposition: inline; filename="Vista_Previa_Documentos.pdf"');
         header('Content-Length: ' . filesize($rutaCombinada));
@@ -255,7 +319,6 @@ try {
         
         readfile($rutaCombinada);
         
-        // Limpiar archivos temporales
         register_shutdown_function(function() use ($archivosTemporales, $rutaCombinada) {
             sleep(2);
             foreach ($archivosTemporales as $archivo) {
@@ -270,43 +333,15 @@ try {
     }
     
 } catch (Exception $e) {
-    error_log("ERROR en vista_previa_pdf.php: " . $e->getMessage());
-    error_log("POST data: " . print_r($_POST, true));
+    error_log("EXCEPTION en vista previa: " . $e->getMessage());
     error_log("Stack trace: " . $e->getTraceAsString());
     
-    // Mostrar error al usuario
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Error en Vista Previa</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-    </head>
-    <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-            <div class="flex items-center gap-3 text-red-600 mb-4">
-                <svg class="w-8 h-8 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <h1 class="text-xl font-bold">Error en Vista Previa</h1>
-            </div>
-            <div class="mb-4">
-                <p class="text-gray-700 mb-2"><strong>Mensaje:</strong></p>
-                <p class="text-gray-600 text-sm bg-gray-50 p-3 rounded">' . htmlspecialchars($e->getMessage()) . '</p>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="window.close()" class="flex-1 bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 transition">
-                    Cerrar
-                </button>
-                <button onclick="window.history.back()" class="flex-1 bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition">
-                    Volver
-                </button>
-            </div>
-        </div>
-    </body>
-    </html>';
+    mostrarError(
+        $e->getMessage(),
+        "Archivo: " . $e->getFile() . "\n" .
+        "Línea: " . $e->getLine() . "\n\n" .
+        $e->getTraceAsString()
+    );
 }
 
 exit;
