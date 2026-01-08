@@ -46,7 +46,7 @@ class GeneradorResguardoPDF {
         
         $this->llenarDatos($trabajador, $bienes, $datosAdicionales);
 
-        if (count($bienes) >= 2) {
+        if (count($bienes) > 2) {
             $this->generarAnexo($trabajador, $bienes, $datosAdicionales);
         }
 
@@ -89,26 +89,8 @@ class GeneradorResguardoPDF {
         $this->pdf->SetXY(55, 88); 
         $this->pdf->Write(8, $trabajador->getTelefono()); 
 
-        // CUERPO
-        if (count($bienes) >= 2) {
-            $this->pdf->SetXY(138, 109);
-            $this->pdf->Write(5, "VER ANEXO ADJUNTO ( " . count($bienes) . " PARTIDAS )");
-        } else {
-            $bien = $bienes[0]['bien'];
-            $cantidad = isset($bienes[0]['cantidad']) ? $bienes[0]['cantidad'] : '1';
-
-            $this->pdf->SetXY(30, 115); 
-            $this->pdf->Write(5, $cantidad);
-
-            $this->pdf->SetXY(128, 109);
-            $this->pdf->Write(5, $bien->getDescripcion());
-            
-            $this->pdf->SetXY(128, 115); 
-            $this->pdf->Write(8, $bien->getMarca());
-            
-            $this->pdf->SetXY(128, 120); 
-            $this->pdf->Write(13, $bien->getSerie());
-        }
+        // CUERPO - Escribir bienes en la tabla del formulario
+        $this->escribirBienesEnTabla($bienes);
 
         // FIRMAS - Primera página
         // Quien RECIBE (Resguardante - Izquierda)
@@ -124,6 +106,52 @@ class GeneradorResguardoPDF {
         
         $this->pdf->SetXY(111, 232); 
         $this->pdf->Write(10, $datosAdicionales['cargo_entrega']); 
+    }
+
+    /**
+     * Escribe los bienes en la tabla del formulario (máximo 2 bienes en primera página)
+     */
+    private function escribirBienesEnTabla($bienes) {
+        if (count($bienes) > 2) {
+            // Si hay más de 2 bienes, mostrar mensaje de anexo
+            $this->pdf->SetXY(138, 109);
+            $this->pdf->Write(5, "VER ANEXO ADJUNTO ( " . count($bienes) . " PARTIDAS )");
+            return;
+        }
+
+        // Escribir hasta 2 bienes en la tabla
+        $yInicio = 109; // Posición Y inicial de la primera fila
+        $altoFila = 23; // Alto de cada fila en la tabla
+        
+        foreach (array_slice($bienes, 0, 2) as $index => $item) {
+            $bien = $item['bien'];
+            $cantidad = isset($item['cantidad']) ? $item['cantidad'] : 1;
+            $yActual = $yInicio + ($index * $altoFila);
+            
+            // Columna: CANTIDAD (O IDENTIFICACIÓN)
+            $this->pdf->SetXY(26, $yActual + 6);
+            $this->pdf->Write(5, $cantidad);
+            
+            // Columna: NATURALEZA
+            $this->pdf->SetXY(78, $yActual + 6);
+            $this->pdf->Write(5, $bien->getNaturaleza());
+            
+            // Columna: DESCRIPCIÓN
+            $descripcion = $bien->getDescripcion();
+            if (strlen($descripcion) > 35) {
+                $descripcion = substr($descripcion, 0, 32) . '...';
+            }
+            $this->pdf->SetXY(128, $yActual);
+            $this->pdf->Write(5, $descripcion);
+            
+            // MARCA
+            $this->pdf->SetXY(128, $yActual + 6);
+            $this->pdf->Write(5, $bien->getMarca());
+            
+            // SERIE
+            $this->pdf->SetXY(128, $yActual + 11);
+            $this->pdf->Write(5, $bien->getSerie());
+        }
     }
 
     private function generarAnexo($trabajador, $bienes, $datosAdicionales) {
@@ -143,30 +171,32 @@ class GeneradorResguardoPDF {
         $this->pdf->SetFillColor(235, 235, 235);
         $this->pdf->SetFont('helvetica', '', 8);
         
-        $w = array(15, 65, 34, 33, 33); 
+        $w = array(15, 30, 50, 30, 30, 25); 
         
         $this->pdf->Cell($w[0], 7, 'CANT.', 1, 0, 'C', 1);
-        $this->pdf->Cell($w[1], 7, 'DESCRIPCIÓN', 1, 0, 'C', 1);
-        $this->pdf->Cell($w[2], 7, 'MARCA', 1, 0, 'C', 1);
-        $this->pdf->Cell($w[3], 7, 'MODELO', 1, 0, 'C', 1);
-        $this->pdf->Cell($w[4], 7, 'SERIE', 1, 1, 'C', 1);
+        $this->pdf->Cell($w[1], 7, 'NATURALEZA', 1, 0, 'C', 1);
+        $this->pdf->Cell($w[2], 7, 'DESCRIPCIÓN', 1, 0, 'C', 1);
+        $this->pdf->Cell($w[3], 7, 'MARCA', 1, 0, 'C', 1);
+        $this->pdf->Cell($w[4], 7, 'MODELO', 1, 0, 'C', 1);
+        $this->pdf->Cell($w[5], 7, 'SERIE', 1, 1, 'C', 1);
 
         $this->pdf->SetFont('helvetica', '', 7);
         foreach ($bienes as $item) {
             $bien = $item['bien'];
             $cant = isset($item['cantidad']) ? $item['cantidad'] : '1';
 
-            $nb = $this->pdf->getNumLines($bien->getDescripcion(), $w[1]);
+            $nb = $this->pdf->getNumLines($bien->getDescripcion(), $w[2]);
             $h = 5 * $nb;
             if($h < 7) {
                 $h = 7;
             }
 
             $this->pdf->MultiCell($w[0], $h, $cant, 1, 'C', 0, 0);
-            $this->pdf->MultiCell($w[1], $h, $bien->getDescripcion(), 1, 'L', 0, 0);
-            $this->pdf->MultiCell($w[2], $h, $bien->getMarca(), 1, 'L', 0, 0);
-            $this->pdf->MultiCell($w[3], $h, $bien->getModelo(), 1, 'L', 0, 0);
-            $this->pdf->MultiCell($w[4], $h, $bien->getSerie(), 1, 'L', 0, 1);
+            $this->pdf->MultiCell($w[1], $h, $bien->getNaturaleza(), 1, 'C', 0, 0);
+            $this->pdf->MultiCell($w[2], $h, $bien->getDescripcion(), 1, 'L', 0, 0);
+            $this->pdf->MultiCell($w[3], $h, $bien->getMarca(), 1, 'L', 0, 0);
+            $this->pdf->MultiCell($w[4], $h, $bien->getModelo(), 1, 'L', 0, 0);
+            $this->pdf->MultiCell($w[5], $h, $bien->getSerie(), 1, 'L', 0, 1);
         }
 
         // BLOQUE DE FIRMAS

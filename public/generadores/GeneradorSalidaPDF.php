@@ -161,21 +161,6 @@ class GeneradorSalidaPDF {
         $this->pdf->SetXY(55, 73);
         $this->pdf->Write(10, $area);
 
-        // CANTIDAD TOTAL DE BIENES
-        $cantidadTotal = 0;
-        foreach($bienes as $b) {
-            $cantidadTotal += isset($b['cantidad']) ? $b['cantidad'] : 1;
-        }
-        $this->pdf->SetXY(30, 95);
-        $this->pdf->Write(10, $cantidadTotal);
-        
-        // NATURALEZA (mostrar la primera o más común)
-        if (!empty($bienes)) {
-            $naturalezaPrincipal = $bienes[0]['bien']->getNaturaleza();
-            $this->pdf->SetXY(65, 95);
-            $this->pdf->Write(10, $naturalezaPrincipal);
-        }
-
         // MARCAR TODAS LAS NATURALEZAS ÚNICAS
         $naturalezasUnicas = $this->obtenerNaturalezasUnicas($bienes);
         $this->marcarCasillasNaturaleza($naturalezasUnicas);
@@ -244,43 +229,37 @@ class GeneradorSalidaPDF {
     }
 
     private function escribirDescripcionesBienes($bienes) {
-        $this->pdf->SetFont('helvetica', '', 9);
+        $this->pdf->SetFont('helvetica', '', 7);
         
-        $x = 98;
         $y = 98;
         $width = 100;
         $lineHeight = 5;
 
         if (count($bienes) > 5) {
             $this->pdf->SetXY($x, $y + 2);
-            $this->pdf->SetFont('helvetica', '', 8);
+            $this->pdf->SetFont('helvetica', '', 7);
             $this->pdf->MultiCell($width, $lineHeight, 'Ver Anexo Adjunto (' . count($bienes) . ' partidas)', 0, 'L');
             return;
         }
 
-        // Mostrar hasta 5 bienes
+        // Mostrar hasta 5 bienes - CADA BIEN EN SU PROPIA LÍNEA
         $primeros = array_slice($bienes, 0, 5);
         foreach ($primeros as $item) {
             $bien = $item['bien'];
             $cantidad = isset($item['cantidad']) ? $item['cantidad'] : 1;
-            
-            // Construir línea con cantidad y descripción
+            $this->pdf->SetXY(30, $y);
+            $this->pdf->Write($lineHeight, $cantidad);
+
+            $naturaleza = $bien->getNaturaleza();
+            $this->pdf->SetXY(70, $y);
+            $this->pdf->Write($lineHeight, $naturaleza);
+
             $descripcion = $bien->getDescripcion();
+            $this->pdf->SetXY(100, $y);
+            $this->pdf->Write($lineHeight, $descripcion);
             
-            // Si hay más de 1, mostrar cantidad entre paréntesis
-            if ($cantidad > 1) {
-                $linea = "(" . $cantidad . ") " . $descripcion;
-            } else {
-                $linea = $descripcion;
-            }
             
-            if (strlen($linea) > 50) {
-                $linea = substr($linea, 0, 47) . '...';
-            }
-            
-            $this->pdf->SetXY($x, $y);
-            $this->pdf->MultiCell($width, $lineHeight, $linea, 0, 'L');
-            $y = $this->pdf->GetY();
+            $y += $lineHeight;
         }
     }
 
@@ -301,14 +280,15 @@ class GeneradorSalidaPDF {
         $this->pdf->SetFillColor(235, 235, 235);
         $this->pdf->SetFont('helvetica', '', 8);
         
-        $w = array(15, 50, 25, 25, 25, 40);
+        $w = array(15, 25, 35, 25, 25, 25, 30);
         
         $this->pdf->Cell($w[0], 7, 'CANT.', 1, 0, 'C', 1);
-        $this->pdf->Cell($w[1], 7, 'DESCRIPCIÓN', 1, 0, 'C', 1);
-        $this->pdf->Cell($w[2], 7, 'MARCA', 1, 0, 'C', 1);
-        $this->pdf->Cell($w[3], 7, 'MODELO', 1, 0, 'C', 1);
-        $this->pdf->Cell($w[4], 7, 'SERIE', 1, 0, 'C', 1);
-        $this->pdf->Cell($w[5], 7, 'ESTADO / DEVOLUCIÓN', 1, 1, 'C', 1);
+        $this->pdf->Cell($w[1], 7, 'NAT.', 1, 0, 'C', 1);
+        $this->pdf->Cell($w[2], 7, 'DESCRIPCIÓN', 1, 0, 'C', 1);
+        $this->pdf->Cell($w[3], 7, 'MARCA', 1, 0, 'C', 1);
+        $this->pdf->Cell($w[4], 7, 'MODELO', 1, 0, 'C', 1);
+        $this->pdf->Cell($w[5], 7, 'SERIE', 1, 0, 'C', 1);
+        $this->pdf->Cell($w[6], 7, 'ESTADO / DEV', 1, 1, 'C', 1);
 
         $this->pdf->SetFont('helvetica', '', 7);
         foreach ($bienes as $item) {
@@ -325,18 +305,19 @@ class GeneradorSalidaPDF {
                 ? 'SÍ' 
                 : 'NO';
             
-            $estadoCompleto = $estado . " / Dev: " . $devolucion;
+            $estadoCompleto = $estado . " / " . $devolucion;
 
-            $nb = $this->pdf->getNumLines($bien->getDescripcion(), $w[1]);
+            $nb = $this->pdf->getNumLines($bien->getDescripcion(), $w[2]);
             $h = 5 * $nb;
             if($h < 7) $h = 7;
 
             $this->pdf->MultiCell($w[0], $h, $cant, 1, 'C', 0, 0);
-            $this->pdf->MultiCell($w[1], $h, $bien->getDescripcion(), 1, 'L', 0, 0);
-            $this->pdf->MultiCell($w[2], $h, $bien->getMarca(), 1, 'L', 0, 0);
-            $this->pdf->MultiCell($w[3], $h, $bien->getModelo(), 1, 'L', 0, 0);
-            $this->pdf->MultiCell($w[4], $h, $bien->getSerie(), 1, 'L', 0, 0);
-            $this->pdf->MultiCell($w[5], $h, $estadoCompleto, 1, 'L', 0, 1);
+            $this->pdf->MultiCell($w[1], $h, $bien->getNaturaleza(), 1, 'C', 0, 0);
+            $this->pdf->MultiCell($w[2], $h, $bien->getDescripcion(), 1, 'L', 0, 0);
+            $this->pdf->MultiCell($w[3], $h, $bien->getMarca(), 1, 'L', 0, 0);
+            $this->pdf->MultiCell($w[4], $h, $bien->getModelo(), 1, 'L', 0, 0);
+            $this->pdf->MultiCell($w[5], $h, $bien->getSerie(), 1, 'L', 0, 0);
+            $this->pdf->MultiCell($w[6], $h, $estadoCompleto, 1, 'L', 0, 1);
         }
 
         // FIRMAS
