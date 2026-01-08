@@ -112,46 +112,29 @@ class GeneradorResguardoPDF {
      * Escribe los bienes en la tabla del formulario (máximo 2 bienes en primera página)
      */
     private function escribirBienesEnTabla($bienes) {
-        if (count($bienes) > 2) {
+        if (count($bienes) >= 2) {
             // Si hay más de 2 bienes, mostrar mensaje de anexo
             $this->pdf->SetXY(138, 109);
             $this->pdf->Write(5, "VER ANEXO ADJUNTO ( " . count($bienes) . " PARTIDAS )");
             return;
         }
 
-        // Escribir hasta 2 bienes en la tabla
-        $yInicio = 109; // Posición Y inicial de la primera fila
-        $altoFila = 23; // Alto de cada fila en la tabla
-        
-        foreach (array_slice($bienes, 0, 2) as $index => $item) {
-            $bien = $item['bien'];
-            $cantidad = isset($item['cantidad']) ? $item['cantidad'] : 1;
-            $yActual = $yInicio + ($index * $altoFila);
-            
-            // Columna: CANTIDAD (O IDENTIFICACIÓN)
-            $this->pdf->SetXY(26, $yActual + 6);
+            $bien = $bienes[0]['bien'];
+
+            // Compatibilidad PHP 5.6
+            $cantidad = isset($bienes[0]['cantidad']) ? $bienes[0]['cantidad'] : '1';
+            // Cantidad (Ajustada a la izquierda de la descripción)
+            $this->pdf->SetXY(30, 115); 
             $this->pdf->Write(5, $cantidad);
-            
-            // Columna: NATURALEZA
-            $this->pdf->SetXY(78, $yActual + 6);
-            $this->pdf->Write(5, $bien->getNaturaleza());
-            
-            // Columna: DESCRIPCIÓN
-            $descripcion = $bien->getDescripcion();
-            if (strlen($descripcion) > 35) {
-                $descripcion = substr($descripcion, 0, 32) . '...';
-            }
-            $this->pdf->SetXY(128, $yActual);
-            $this->pdf->Write(5, $descripcion);
-            
-            // MARCA
-            $this->pdf->SetXY(128, $yActual + 6);
-            $this->pdf->Write(5, $bien->getMarca());
-            
-            // SERIE
-            $this->pdf->SetXY(128, $yActual + 11);
-            $this->pdf->Write(5, $bien->getSerie());
-        }
+            // Detalles del bien
+            $this->pdf->SetXY(128, 109);
+            $this->pdf->Write(5, $bien->getDescripcion());
+            $this->pdf->SetXY(128, 115);  
+            $this->pdf->Write(8, $bien->getMarca());
+            $this->pdf->SetXY(128, 120); 
+            $this->pdf->Write(13, $bien->getSerie());
+
+
     }
 
     private function generarAnexo($trabajador, $bienes, $datosAdicionales) {

@@ -62,7 +62,7 @@ try {
     }
     
     // GENERAR FOLIO TEMPORAL PARA VISTA PREVIA (con prefijo PREVIEW)
-    $folio = 'PREVIEW-' . $folioGenerator->generarFolio();
+    $folio = $folioGenerator->generarFolio();
     
     $tiposMovimiento = $_POST['tipos_movimiento'];
     
