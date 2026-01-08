@@ -56,12 +56,9 @@ require __DIR__ . '/public/layouts/head.php';
         </h1>
         <p class="text-imss-gray dark:text-gray-400 flex items-center gap-2">
             <span class="material-symbols-outlined text-lg">calendar_today</span>
-            <?php 
-                // Configuramos el idioma a español
-                setlocale(LC_TIME, 'es_ES.UTF-8', 'esp');
-                // Usamos IntlDateFormatter para asegurar que funcione en cualquier servidor
-                $formatter = new IntlDateFormatter('es_ES', IntlDateFormatter::LONG, IntlDateFormatter::NONE);
-                echo $formatter->format(new DateTime());
+            <?php
+                $meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+                echo date('d') . " de " . $meses[date('n')-1] . " de " . date('Y');
             ?>
         </p>
     </div>
