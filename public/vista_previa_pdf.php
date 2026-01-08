@@ -1,5 +1,5 @@
 <?php
-// public/vista_previa_pdf.php - VERSIÓN CON SOPORTE PARA LOS 3 TIPOS DE DOCUMENTOS
+// public/vista_previa_pdf.php - VERSIÓN UNIFICADA CON procesar_pdf.php
 session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -61,8 +61,8 @@ try {
         $_POST['lugar'] = 'Oaxaca de Juárez, Oaxaca';
     }
     
-    // GENERAR FOLIO TEMPORAL PARA VISTA PREVIA
-    $folio = $folioGenerator->generarFolio();
+    // GENERAR FOLIO TEMPORAL PARA VISTA PREVIA (con prefijo PREVIEW)
+    $folio = 'PREVIEW-' . $folioGenerator->generarFolio();
     
     $tiposMovimiento = $_POST['tipos_movimiento'];
     
@@ -82,7 +82,7 @@ try {
         throw new Exception("Trabajador que entrega no encontrado (matrícula: {$_POST['matricula_entrega']})");
     }
 
-    // 2. Obtener Bienes
+    // 2. Obtener Bienes CON TODOS LOS DATOS (IGUAL QUE procesar_pdf.php)
     if (!isset($_POST['bienes']) || empty($_POST['bienes'])) {
         throw new Exception("Debe agregar al menos un bien");
     }
@@ -95,7 +95,9 @@ try {
         if ($bienObj) {
             $bienesSeleccionados[] = array(
                 'bien' => $bienObj,
-                'cantidad' => isset($item['cantidad']) ? $item['cantidad'] : 1
+                'cantidad' => isset($item['cantidad']) ? intval($item['cantidad']) : 1,
+                'estado_fisico' => isset($item['estado_fisico']) ? $item['estado_fisico'] : '',
+                'sujeto_devolucion' => isset($item['sujeto_devolucion']) ? intval($item['sujeto_devolucion']) : 0
             );
         }
     }
@@ -104,26 +106,33 @@ try {
     if (empty($bienesSeleccionados)) {
         throw new Exception("Debe seleccionar al menos un bien válido");
     }
+    
+    // Obtener estado general (del primer bien o por defecto)
+    $estadoGeneral = 'Bueno';
+    if (!empty($bienesSeleccionados) && !empty($bienesSeleccionados[0]['estado_fisico'])) {
+        $estadoGeneral = $bienesSeleccionados[0]['estado_fisico'];
+    }
 
-    // 3. Preparar datos adicionales
+    // 3. Preparar datos adicionales (EXACTAMENTE IGUAL QUE procesar_pdf.php)
     $datosAdicionales = array(
         'folio' => $folio,
         'fecha' => $_POST['fecha'],
-        'lugar' => $_POST['lugar'],
+        'lugar' => isset($_POST['lugar']) ? $_POST['lugar'] : 'Oaxaca de Juárez, Oaxaca',
         'recibe_resguardo' => $trabajadorRecibe->getNombre(),
         'entrega_resguardo' => $trabajadorEntrega->getNombre(),
         'cargo_entrega' => $trabajadorEntrega->getCargo(),
+        'tipo_documento' => '', // Se llenará por cada tipo
         'departamento_per' => $trabajadorRecibe->getAdscripcion(),
         'responsable_control_administrativo' => $trabajadorEntrega->getNombre(),
         'matricula_administrativo' => $trabajadorEntrega->getMatricula(),
         'matricula_coordinacion' => $trabajadorRecibe->getMatricula(),
+        'estado_general' => $estadoGeneral,
         // Datos adicionales para Préstamo y Constancia de Salida
-        'dias_prestamo' => isset($_POST['dias_prestamo']) ? $_POST['dias_prestamo'] : null,
-        'fecha_devolucion_prestamo' => isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : null,
-        'devolucion' => 'no' // Por defecto NO
+        'dias_prestamo' => isset($_POST['dias_prestamo']) ? intval($_POST['dias_prestamo']) : null,
+        'fecha_devolucion_prestamo' => isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : null
     );
 
-    // 4. Generar PDFs temporales
+    // 4. Generar PDFs temporales (EXACTAMENTE IGUAL QUE procesar_pdf.php)
     $archivosTemporales = array();
     
     if (!file_exists(__DIR__ . '/pdfs')) {
@@ -152,31 +161,41 @@ try {
             throw new Exception("Error al generar el PDF temporal para " . $tipoMovimiento);
         }
         
-        $archivosTemporales[] = $rutaTemporal;
+        $archivosTemporales[] = array(
+            'tipo' => $tipoMovimiento,
+            'ruta' => $rutaTemporal,
+            'nombre' => basename($rutaTemporal)
+        );
     }
 
     // 5. Si hay un solo archivo, mostrarlo directamente
     if (count($archivosTemporales) === 1) {
-        $rutaTemporal = $archivosTemporales[0];
+        $archivo = $archivosTemporales[0];
         
         header('Content-Type: application/pdf');
-        header('Content-Disposition: inline; filename="Vista_Previa_' . str_replace(' ', '_', $tiposMovimiento[0]) . '.pdf"');
-        header('Content-Length: ' . filesize($rutaTemporal));
+        header('Content-Disposition: inline; filename="Vista_Previa_' . str_replace(' ', '_', $archivo['tipo']) . '.pdf"');
+        header('Content-Length: ' . filesize($archivo['ruta']));
         header('Cache-Control: no-cache, no-store, must-revalidate');
         header('Pragma: no-cache');
         header('Expires: 0');
         
-        readfile($rutaTemporal);
+        readfile($archivo['ruta']);
         
-        @unlink($rutaTemporal);
+        // Limpiar después de enviar
+        register_shutdown_function(function() use ($archivo) {
+            if (file_exists($archivo['ruta'])) {
+                sleep(2);
+                @unlink($archivo['ruta']);
+            }
+        });
     } else {
-        // Si hay múltiples archivos, combinarlos
+        // Si hay múltiples archivos, combinarlos (EXACTAMENTE IGUAL QUE procesar_pdf.php)
         $pdfCombinado = new Fpdi();
         $pdfCombinado->setPrintHeader(false);
         $pdfCombinado->setPrintFooter(false);
         
-        foreach ($archivosTemporales as $rutaTemporal) {
-            $numPaginas = $pdfCombinado->setSourceFile($rutaTemporal);
+        foreach ($archivosTemporales as $archivo) {
+            $numPaginas = $pdfCombinado->setSourceFile($archivo['ruta']);
             
             for ($i = 1; $i <= $numPaginas; $i++) {
                 $pdfCombinado->AddPage();
@@ -185,7 +204,7 @@ try {
             }
         }
         
-        $rutaCombinada = __DIR__ . '/pdfs/preview_combined_' . time() . '.pdf';
+        $rutaCombinada = __DIR__ . '/pdfs/preview_combined_' . time() . '_' . uniqid() . '.pdf';
         $pdfCombinado->Output($rutaCombinada, 'F');
         
         // Mostrar PDF combinado
@@ -199,10 +218,17 @@ try {
         readfile($rutaCombinada);
         
         // Limpiar archivos temporales
-        foreach ($archivosTemporales as $rutaTemporal) {
-            @unlink($rutaTemporal);
-        }
-        @unlink($rutaCombinada);
+        register_shutdown_function(function() use ($archivosTemporales, $rutaCombinada) {
+            sleep(2);
+            foreach ($archivosTemporales as $archivo) {
+                if (file_exists($archivo['ruta'])) {
+                    @unlink($archivo['ruta']);
+                }
+            }
+            if (file_exists($rutaCombinada)) {
+                @unlink($rutaCombinada);
+            }
+        });
     }
     
 } catch (Exception $e) {
