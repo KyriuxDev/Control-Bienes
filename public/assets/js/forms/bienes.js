@@ -153,5 +153,101 @@
         todosLosSelects.forEach(select => {
             agregarListenerASelect(select);
         });
+
+        // Manejar submit del formulario de crear bien
+        const formBien = document.getElementById('form-bien');
+        if (formBien) {
+            console.log('✅ Formulario #form-bien encontrado, agregando manejador');
+            
+            formBien.addEventListener('submit', function(e) {
+                e.preventDefault();
+                console.log('📤 Enviando formulario de bien...');
+                
+                const formData = new FormData(this);
+                
+                // Validar descripción
+                const descripcion = formData.get('descripcion');
+                if (!descripcion || descripcion.trim() === '') {
+                    if (typeof mostrarNotificacion === 'function') {
+                        mostrarNotificacion('La descripción es obligatoria', 'error');
+                    } else {
+                        alert('La descripción es obligatoria');
+                    }
+                    return;
+                }
+                
+                // Deshabilitar botón
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn ? submitBtn.textContent : 'Crear Registro';
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">refresh</span> Guardando...';
+                }
+                
+                fetch('api/guardar_bien.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(r => {
+                    console.log('📥 Respuesta recibida:', r.status);
+                    return r.json();
+                })
+                .then(data => {
+                    console.log('📦 Datos recibidos:', data);
+                    
+                    if (data.success) {
+                        // Cerrar modal
+                        if (typeof toggleModal === 'function') {
+                            toggleModal('modal-bien');
+                        }
+                        
+                        // Mostrar notificación
+                        if (typeof mostrarNotificacion === 'function') {
+                            mostrarNotificacion('Bien guardado correctamente', 'success');
+                        }
+                        
+                        // Limpiar formulario
+                        formBien.reset();
+                        
+                        // Actualizar catálogo en memoria
+                        if (window.APP_DATA && window.APP_DATA.bienesCatalogo && data.bien) {
+                            console.log('✅ Agregando bien al catálogo:', data.bien);
+                            window.APP_DATA.bienesCatalogo.push(data.bien);
+                            window.actualizarDropdownsBienes();
+                        } else {
+                            // Si no hay APP_DATA, recargar página
+                            console.log('⚠️ APP_DATA no disponible, recargando página...');
+                            setTimeout(() => location.reload(), 1000);
+                        }
+                    } else {
+                        const mensaje = data.message || 'Error al guardar el bien';
+                        if (typeof mostrarNotificacion === 'function') {
+                            mostrarNotificacion(mensaje, 'error');
+                        } else {
+                            alert(mensaje);
+                        }
+                        console.error('❌ Error del servidor:', mensaje);
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Error en la petición:', error);
+                    const mensaje = 'Error de conexión al guardar el bien';
+                    if (typeof mostrarNotificacion === 'function') {
+                        mostrarNotificacion(mensaje, 'error');
+                    } else {
+                        alert(mensaje);
+                    }
+                })
+                .finally(() => {
+                    // Rehabilitar botón
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                    }
+                });
+            });
+        } else {
+            console.warn('⚠️ Formulario #form-bien no encontrado');
+        }
     }
 })();
