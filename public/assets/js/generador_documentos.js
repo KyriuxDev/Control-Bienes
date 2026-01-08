@@ -1,4 +1,4 @@
-// public/assets/js/generador_documentos.js - VERSIÓN CON CÁLCULO DE DÍAS DE PRÉSTAMO
+// public/assets/js/generador_documentos.js - VERSIÓN CON CAMPOS INDEPENDIENTES PARA PRÉSTAMO Y CONSTANCIA
 
 window.updateConstanciaFields = function () {
     const checkboxes = document.querySelectorAll('input[name="tipos_movimiento[]"]:checked');
@@ -24,7 +24,7 @@ window.updateConstanciaFields = function () {
         }
     }
 
-    // Constancia de salida
+    // Constancia de salida - Opciones globales
     const tieneConstancia = tiposSeleccionados.includes('Constancia de salida');
     document.querySelectorAll('.constancia-only').forEach(el => {
         if (tieneConstancia) {
@@ -33,6 +33,31 @@ window.updateConstanciaFields = function () {
             el.classList.add('hidden');
         }
     });
+    
+    // Actualizar requerimiento del campo de fecha de devolución de constancia
+    actualizarRequerimientoFechaConstancia();
+};
+
+// Función para actualizar el requerimiento de fecha de constancia según sujeto a devolución
+window.actualizarRequerimientoFechaConstancia = function() {
+    const checkboxes = document.querySelectorAll('input[name="tipos_movimiento[]"]:checked');
+    const tiposSeleccionados = Array.from(checkboxes).map(cb => cb.value);
+    const tieneConstancia = tiposSeleccionados.includes('Constancia de salida');
+    
+    const sujetoDevolucionSi = document.querySelector('input[name="sujeto_devolucion_global"][value="1"]');
+    const fechaDevolucionConstanciaContainer = document.querySelector('#fecha-devolucion-constancia-container');
+    const inputFechaDevolucionConstancia = document.querySelector('#fecha_devolucion_constancia');
+    
+    if (fechaDevolucionConstanciaContainer && inputFechaDevolucionConstancia) {
+        if (tieneConstancia && sujetoDevolucionSi && sujetoDevolucionSi.checked) {
+            fechaDevolucionConstanciaContainer.classList.remove('hidden');
+            inputFechaDevolucionConstancia.required = true;
+        } else {
+            fechaDevolucionConstanciaContainer.classList.add('hidden');
+            inputFechaDevolucionConstancia.required = false;
+            inputFechaDevolucionConstancia.value = '';
+        }
+    }
 };
 
 // Función para calcular días de préstamo
@@ -86,6 +111,11 @@ document.addEventListener('DOMContentLoaded', function() {
         checkbox.addEventListener('change', window.updateConstanciaFields);
     });
     
+    // Listener para cambios en sujeto a devolución
+    document.querySelectorAll('input[name="sujeto_devolucion_global"]').forEach(function(radio) {
+        radio.addEventListener('change', window.actualizarRequerimientoFechaConstancia);
+    });
+    
     // Listener para calcular días cuando cambia la fecha de emisión
     const fechaEmision = document.querySelector('#fecha');
     if (fechaEmision) {
@@ -114,6 +144,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (fechaDevolucion.value) {
                     calcularDiasPrestamo();
                 }
+            }
+        });
+    }
+    
+    // Configurar fecha mínima para fecha de devolución de constancia
+    const fechaDevolucionConstancia = document.querySelector('#fecha_devolucion_constancia');
+    if (fechaEmision && fechaDevolucionConstancia) {
+        fechaEmision.addEventListener('change', function() {
+            if (this.value) {
+                const fechaMin = new Date(this.value);
+                fechaMin.setDate(fechaMin.getDate() + 1);
+                fechaDevolucionConstancia.min = fechaMin.toISOString().split('T')[0];
             }
         });
     }
@@ -191,9 +233,26 @@ window.vistaPrevia = function () {
         }
     }
     
+    // 5. Validar fecha de devolución si Constancia de salida con sujeto a devolución está seleccionado
+    const tieneConstancia = Array.from(tiposSeleccionados).some(function(cb) {
+        return cb.value === 'Constancia de salida';
+    });
+    
+    if (tieneConstancia) {
+        const sujetoDevolucionSi = form.querySelector('input[name="sujeto_devolucion_global"][value="1"]');
+        if (sujetoDevolucionSi && sujetoDevolucionSi.checked) {
+            const fechaDevolucionConstanciaInput = form.querySelector('input[name="fecha_devolucion_constancia"]');
+            if (fechaDevolucionConstanciaInput && !fechaDevolucionConstanciaInput.value) {
+                alert('Por favor seleccione la fecha de devolución para la constancia de salida');
+                fechaDevolucionConstanciaInput.focus();
+                return;
+            }
+        }
+    }
+    
     console.log('Validaciones completadas');
 
-    // 5. Configurar envío temporal para vista previa
+    // 6. Configurar envío temporal para vista previa
     const actionOriginal = form.action;
     const targetOriginal = form.target;
     

@@ -1,5 +1,5 @@
 <?php
-// public/vista_previa_pdf.php - VERSIÓN CON OPCIONES GLOBALES
+// public/vista_previa_pdf.php - VERSIÓN CON CAMPOS INDEPENDIENTES
 session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -121,6 +121,14 @@ try {
         throw new Exception("Debe seleccionar al menos un bien válido");
     }
 
+    // Debug logging
+    error_log("=== DEBUG VISTA PREVIA (CAMPOS INDEPENDIENTES) ===");
+    error_log("Bienes seleccionados: " . count($bienesSeleccionados));
+    error_log("Estado global: " . $estadoGeneral);
+    error_log("Sujeto devolución global: " . $sujetoDevolucionGlobal);
+    error_log("Fecha devolución préstamo: " . (isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : 'no establecida'));
+    error_log("Fecha devolución constancia: " . (isset($_POST['fecha_devolucion_constancia']) ? $_POST['fecha_devolucion_constancia'] : 'no establecida'));
+
     // 5. Preparar datos adicionales
     $datosAdicionales = array(
         'folio' => $folio,
@@ -136,9 +144,11 @@ try {
         'matricula_coordinacion' => $trabajadorRecibe->getMatricula(),
         'estado_general' => $estadoGeneral, // Estado global
         'sujeto_devolucion_global' => $sujetoDevolucionGlobal, // Opción global
-        // Datos adicionales para Préstamo y Constancia de Salida
+        // Datos adicionales para Préstamo
         'dias_prestamo' => isset($_POST['dias_prestamo']) ? intval($_POST['dias_prestamo']) : null,
-        'fecha_devolucion_prestamo' => isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : null
+        'fecha_devolucion_prestamo' => isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : null,
+        // Datos adicionales para Constancia de Salida
+        'fecha_devolucion_constancia' => isset($_POST['fecha_devolucion_constancia']) ? $_POST['fecha_devolucion_constancia'] : null
     );
 
     // 6. Generar PDFs temporales
@@ -175,6 +185,8 @@ try {
             'ruta' => $rutaTemporal,
             'nombre' => basename($rutaTemporal)
         );
+        
+        error_log("PDF generado para {$tipoMovimiento}: " . $rutaTemporal);
     }
 
     // 7. Si hay un solo archivo, mostrarlo directamente
@@ -199,22 +211,39 @@ try {
         });
     } else {
         // Si hay múltiples archivos, combinarlos
+        error_log("=== COMBINANDO MÚLTIPLES PDFs PARA VISTA PREVIA ===");
+        error_log("Número de archivos: " . count($archivosTemporales));
+        
         $pdfCombinado = new Fpdi();
         $pdfCombinado->setPrintHeader(false);
         $pdfCombinado->setPrintFooter(false);
         
         foreach ($archivosTemporales as $archivo) {
-            $numPaginas = $pdfCombinado->setSourceFile($archivo['ruta']);
+            error_log("Procesando: " . $archivo['ruta']);
             
-            for ($i = 1; $i <= $numPaginas; $i++) {
-                $pdfCombinado->AddPage();
-                $templateId = $pdfCombinado->importPage($i);
-                $pdfCombinado->useTemplate($templateId, 0, 0, null, null, true);
+            if (!file_exists($archivo['ruta'])) {
+                error_log("ERROR: Archivo no existe");
+                continue;
+            }
+            
+            try {
+                $numPaginas = $pdfCombinado->setSourceFile($archivo['ruta']);
+                error_log("Páginas: " . $numPaginas);
+                
+                for ($i = 1; $i <= $numPaginas; $i++) {
+                    $pdfCombinado->AddPage();
+                    $templateId = $pdfCombinado->importPage($i);
+                    $pdfCombinado->useTemplate($templateId, 0, 0, null, null, true);
+                }
+            } catch (Exception $e) {
+                error_log("ERROR al combinar: " . $e->getMessage());
             }
         }
         
         $rutaCombinada = __DIR__ . '/pdfs/preview_combined_' . time() . '_' . uniqid() . '.pdf';
         $pdfCombinado->Output($rutaCombinada, 'F');
+        
+        error_log("PDF combinado guardado: " . $rutaCombinada);
         
         // Mostrar PDF combinado
         header('Content-Type: application/pdf');

@@ -1,5 +1,5 @@
 <?php
-// public/generadores/GeneradorSalidaPDF.php - VERSIÓN CON OPCIONES GLOBALES
+// public/generadores/GeneradorSalidaPDF.php - VERSIÓN CON CAMPO INDEPENDIENTE PARA CONSTANCIA
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 use setasign\Fpdi\Tcpdf\Fpdi;
@@ -172,9 +172,9 @@ class GeneradorSalidaPDF {
             $this->pdf->SetXY(77, 144);
             $this->pdf->Write(15, 'X');
             
-            // FECHA DE DEVOLUCIÓN FORMATEADA (debajo de los días)
-            if (isset($datosAdicionales['fecha_devolucion_prestamo']) && !empty($datosAdicionales['fecha_devolucion_prestamo'])) {
-                $fechaDevolucionFormateada = $this->generarTextoFechaCorta($datosAdicionales['fecha_devolucion_prestamo']);
+            // FECHA DE DEVOLUCIÓN FORMATEADA - USAR CAMPO ESPECÍFICO DE CONSTANCIA
+            if (isset($datosAdicionales['fecha_devolucion_constancia']) && !empty($datosAdicionales['fecha_devolucion_constancia'])) {
+                $fechaDevolucionFormateada = $this->generarTextoFechaCorta($datosAdicionales['fecha_devolucion_constancia']);
                 $this->pdf->SetFont('helvetica', '', 7);
                 $this->pdf->SetXY(111, 149);
                 $this->pdf->Write(5, $fechaDevolucionFormateada);
@@ -259,7 +259,15 @@ class GeneradorSalidaPDF {
         $sujetoDevolucionGlobal = isset($datosAdicionales['sujeto_devolucion_global']) && $datosAdicionales['sujeto_devolucion_global'] == 1 ? 'SÍ' : 'NO';
         
         $this->pdf->SetFont('helvetica', '', 8);
-        $this->pdf->Cell(0, 5, "Estado General: " . $estadoGlobal . " | Sujeto a Devolución: " . $sujetoDevolucionGlobal, 0, 1, 'L');
+        $infoExtra = "Estado General: " . $estadoGlobal . " | Sujeto a Devolución: " . $sujetoDevolucionGlobal;
+        
+        // Agregar fecha de devolución si aplica
+        if ($sujetoDevolucionGlobal === 'SÍ' && isset($datosAdicionales['fecha_devolucion_constancia']) && !empty($datosAdicionales['fecha_devolucion_constancia'])) {
+            $fechaDevolucionFormateada = $this->generarTextoFechaCorta($datosAdicionales['fecha_devolucion_constancia']);
+            $infoExtra .= " | Fecha de Devolución: " . $fechaDevolucionFormateada;
+        }
+        
+        $this->pdf->Cell(0, 5, $infoExtra, 0, 1, 'L');
         $this->pdf->Ln(3);
 
         // TABLA DE BIENES

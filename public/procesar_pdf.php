@@ -1,5 +1,5 @@
 <?php
-// public/procesar_pdf.php - VERSIÓN CON OPCIONES GLOBALES
+// public/procesar_pdf.php - VERSIÓN CON CAMPOS INDEPENDIENTES
 session_start();
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/generadores/GeneradorResguardoPDF.php';
@@ -85,10 +85,12 @@ try {
     }
     
     // Debug logging
-    error_log("=== DEBUG PROCESAR PDF (OPCIONES GLOBALES) ===");
+    error_log("=== DEBUG PROCESAR PDF (CAMPOS INDEPENDIENTES) ===");
     error_log("Bienes seleccionados: " . count($bienesSeleccionados));
     error_log("Estado global: " . $estadoGeneral);
     error_log("Sujeto devolución global: " . $sujetoDevolucionGlobal);
+    error_log("Fecha devolución préstamo: " . (isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : 'no establecida'));
+    error_log("Fecha devolución constancia: " . (isset($_POST['fecha_devolucion_constancia']) ? $_POST['fecha_devolucion_constancia'] : 'no establecida'));
     
     // Generar cada tipo de documento seleccionado
     foreach ($tiposMovimiento as $tipoMovimiento) {
@@ -135,9 +137,11 @@ try {
             'matricula_coordinacion' => $trabajadorRecibe->getMatricula(),
             'estado_general' => $estadoGeneral, // Estado global
             'sujeto_devolucion_global' => $sujetoDevolucionGlobal, // Opción global
-            // Datos adicionales para Préstamo y Constancia de Salida
+            // Datos adicionales para Préstamo
             'dias_prestamo' => isset($_POST['dias_prestamo']) ? intval($_POST['dias_prestamo']) : null,
-            'fecha_devolucion_prestamo' => isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : null
+            'fecha_devolucion_prestamo' => isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : null,
+            // Datos adicionales para Constancia de Salida
+            'fecha_devolucion_constancia' => isset($_POST['fecha_devolucion_constancia']) ? $_POST['fecha_devolucion_constancia'] : null
         );
         
         // 4. Generar PDF temporal

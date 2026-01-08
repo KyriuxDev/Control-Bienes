@@ -1,5 +1,5 @@
 <?php
-// public/generador_documentos.php
+// public/generador_documentos.php - VERSIÓN CON CAMPOS INDEPENDIENTES
 session_start();
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -388,6 +388,7 @@ require __DIR__ . '/layouts/head.php';
                                     <input type="radio" 
                                            name="sujeto_devolucion_global" 
                                            value="1" 
+                                           onchange="actualizarRequerimientoFechaConstancia()"
                                            class="text-primary focus:ring-primary">
                                     <span class="text-sm text-imss-dark dark:text-white">Sí</span>
                                 </label>
@@ -396,10 +397,30 @@ require __DIR__ . '/layouts/head.php';
                                            name="sujeto_devolucion_global" 
                                            value="0" 
                                            checked
+                                           onchange="actualizarRequerimientoFechaConstancia()"
                                            class="text-primary focus:ring-primary">
                                     <span class="text-sm text-imss-dark dark:text-white">No</span>
                                 </label>
                             </div>
+                        </div>
+                        
+                        <!-- Fecha de devolución para Constancia de Salida (oculto por defecto) -->
+                        <div class="constancia-only hidden" id="fecha-devolucion-constancia-container">
+                            <label for="fecha_devolucion_constancia" class="block text-xs font-medium text-imss-dark dark:text-gray-200 mb-1">
+                                Fecha de Devolución <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="material-symbols-outlined text-imss-gray text-base">event</span>
+                                </div>
+                                <input type="date" 
+                                       id="fecha_devolucion_constancia" 
+                                       name="fecha_devolucion_constancia" 
+                                       class="block w-full pl-10 pr-3 py-2 border-gray-300 focus:ring-orange-500 focus:border-orange-500 text-sm rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white shadow-sm">
+                            </div>
+                            <p class="mt-1 text-xs text-orange-600 dark:text-orange-400">
+                                Esta fecha se usará en la Constancia de Salida
+                            </p>
                         </div>
                     </div>
                 </div>
