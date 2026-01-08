@@ -1,5 +1,5 @@
 <?php
-// public/procesar_pdf.php - VERSIÓN CORREGIDA CON ESTADO Y SUJETO A DEVOLUCIÓN
+// public/procesar_pdf.php - VERSIÓN CON OPCIONES GLOBALES
 session_start();
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/generadores/GeneradorResguardoPDF.php';
@@ -50,7 +50,21 @@ try {
         throw new Exception("Error: Trabajadores no encontrados");
     }
     
-    // Preparar bienes CON TODOS LOS DATOS
+    // OBTENER ESTADO GLOBAL
+    $estadoGeneral = 'Buenas condiciones'; // Por defecto
+    
+    if (isset($_POST['estado_general'])) {
+        if ($_POST['estado_general'] === 'Otro' && isset($_POST['estado_otro']) && !empty($_POST['estado_otro'])) {
+            $estadoGeneral = $_POST['estado_otro'];
+        } else {
+            $estadoGeneral = $_POST['estado_general'];
+        }
+    }
+    
+    // OBTENER SUJETO A DEVOLUCIÓN GLOBAL
+    $sujetoDevolucionGlobal = isset($_POST['sujeto_devolucion_global']) ? intval($_POST['sujeto_devolucion_global']) : 0;
+    
+    // Preparar bienes CON DATOS GLOBALES
     $bienesSeleccionados = array();
     foreach ($_POST['bienes'] as $item) {
         if (empty($item['id_bien'])) continue;
@@ -60,8 +74,8 @@ try {
             $bienesSeleccionados[] = array(
                 'bien' => $bienObj,
                 'cantidad' => isset($item['cantidad']) ? intval($item['cantidad']) : 1,
-                'estado_fisico' => isset($item['estado_fisico']) ? $item['estado_fisico'] : '',
-                'sujeto_devolucion' => isset($item['sujeto_devolucion']) ? intval($item['sujeto_devolucion']) : 0
+                'estado_fisico' => $estadoGeneral, // Usar estado global
+                'sujeto_devolucion' => $sujetoDevolucionGlobal // Usar opción global
             );
         }
     }
@@ -70,18 +84,11 @@ try {
         throw new Exception("Debe seleccionar al menos un bien");
     }
     
-    // Obtener estado general (del primer bien o por defecto)
-    $estadoGeneral = 'Bueno';
-    if (!empty($bienesSeleccionados) && !empty($bienesSeleccionados[0]['estado_fisico'])) {
-        $estadoGeneral = $bienesSeleccionados[0]['estado_fisico'];
-    }
-    
     // Debug logging
-    error_log("=== DEBUG PROCESAR PDF ===");
+    error_log("=== DEBUG PROCESAR PDF (OPCIONES GLOBALES) ===");
     error_log("Bienes seleccionados: " . count($bienesSeleccionados));
-    error_log("Estado general: " . $estadoGeneral);
-    error_log("Primer bien - Estado: " . (isset($bienesSeleccionados[0]['estado_fisico']) ? $bienesSeleccionados[0]['estado_fisico'] : 'NO DEFINIDO'));
-    error_log("Primer bien - Sujeto devolución: " . (isset($bienesSeleccionados[0]['sujeto_devolucion']) ? $bienesSeleccionados[0]['sujeto_devolucion'] : 'NO DEFINIDO'));
+    error_log("Estado global: " . $estadoGeneral);
+    error_log("Sujeto devolución global: " . $sujetoDevolucionGlobal);
     
     // Generar cada tipo de documento seleccionado
     foreach ($tiposMovimiento as $tipoMovimiento) {
@@ -99,7 +106,7 @@ try {
         $movimientoRepo->persist($movimiento);
         $idMovimiento = $movimiento->getIdMovimiento();
         
-        // 2. Crear detalles para este movimiento CON TODOS LOS DATOS
+        // 2. Crear detalles para este movimiento CON DATOS GLOBALES
         foreach ($_POST['bienes'] as $item) {
             if (empty($item['id_bien'])) continue;
             
@@ -107,8 +114,8 @@ try {
             $detalle->setIdMovimiento($idMovimiento)
                    ->setIdBien($item['id_bien'])
                    ->setCantidad(isset($item['cantidad']) ? intval($item['cantidad']) : 1)
-                   ->setEstadoFisico(isset($item['estado_fisico']) ? $item['estado_fisico'] : '')
-                   ->setSujetoDevolucion(isset($item['sujeto_devolucion']) ? 1 : 0);
+                   ->setEstadoFisico($estadoGeneral) // Usar estado global
+                   ->setSujetoDevolucion($sujetoDevolucionGlobal); // Usar opción global
             
             $detalleRepo->persist($detalle);
         }
@@ -126,7 +133,8 @@ try {
             'responsable_control_administrativo' => $trabajadorEntrega->getNombre(),
             'matricula_administrativo' => $trabajadorEntrega->getMatricula(),
             'matricula_coordinacion' => $trabajadorRecibe->getMatricula(),
-            'estado_general' => $estadoGeneral,
+            'estado_general' => $estadoGeneral, // Estado global
+            'sujeto_devolucion_global' => $sujetoDevolucionGlobal, // Opción global
             // Datos adicionales para Préstamo y Constancia de Salida
             'dias_prestamo' => isset($_POST['dias_prestamo']) ? intval($_POST['dias_prestamo']) : null,
             'fecha_devolucion_prestamo' => isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : null

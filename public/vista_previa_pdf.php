@@ -1,5 +1,5 @@
 <?php
-// public/vista_previa_pdf.php - VERSIÓN UNIFICADA CON procesar_pdf.php
+// public/vista_previa_pdf.php - VERSIÓN CON OPCIONES GLOBALES
 session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -82,7 +82,21 @@ try {
         throw new Exception("Trabajador que entrega no encontrado (matrícula: {$_POST['matricula_entrega']})");
     }
 
-    // 2. Obtener Bienes CON TODOS LOS DATOS (IGUAL QUE procesar_pdf.php)
+    // 2. OBTENER ESTADO GLOBAL
+    $estadoGeneral = 'Buenas condiciones'; // Por defecto
+    
+    if (isset($_POST['estado_general'])) {
+        if ($_POST['estado_general'] === 'Otro' && isset($_POST['estado_otro']) && !empty($_POST['estado_otro'])) {
+            $estadoGeneral = $_POST['estado_otro'];
+        } else {
+            $estadoGeneral = $_POST['estado_general'];
+        }
+    }
+    
+    // 3. OBTENER SUJETO A DEVOLUCIÓN GLOBAL
+    $sujetoDevolucionGlobal = isset($_POST['sujeto_devolucion_global']) ? intval($_POST['sujeto_devolucion_global']) : 0;
+    
+    // 4. Obtener Bienes CON DATOS GLOBALES
     if (!isset($_POST['bienes']) || empty($_POST['bienes'])) {
         throw new Exception("Debe agregar al menos un bien");
     }
@@ -96,8 +110,8 @@ try {
             $bienesSeleccionados[] = array(
                 'bien' => $bienObj,
                 'cantidad' => isset($item['cantidad']) ? intval($item['cantidad']) : 1,
-                'estado_fisico' => isset($item['estado_fisico']) ? $item['estado_fisico'] : '',
-                'sujeto_devolucion' => isset($item['sujeto_devolucion']) ? intval($item['sujeto_devolucion']) : 0
+                'estado_fisico' => $estadoGeneral, // Usar estado global
+                'sujeto_devolucion' => $sujetoDevolucionGlobal // Usar opción global
             );
         }
     }
@@ -106,14 +120,8 @@ try {
     if (empty($bienesSeleccionados)) {
         throw new Exception("Debe seleccionar al menos un bien válido");
     }
-    
-    // Obtener estado general (del primer bien o por defecto)
-    $estadoGeneral = 'Bueno';
-    if (!empty($bienesSeleccionados) && !empty($bienesSeleccionados[0]['estado_fisico'])) {
-        $estadoGeneral = $bienesSeleccionados[0]['estado_fisico'];
-    }
 
-    // 3. Preparar datos adicionales (EXACTAMENTE IGUAL QUE procesar_pdf.php)
+    // 5. Preparar datos adicionales
     $datosAdicionales = array(
         'folio' => $folio,
         'fecha' => $_POST['fecha'],
@@ -126,13 +134,14 @@ try {
         'responsable_control_administrativo' => $trabajadorEntrega->getNombre(),
         'matricula_administrativo' => $trabajadorEntrega->getMatricula(),
         'matricula_coordinacion' => $trabajadorRecibe->getMatricula(),
-        'estado_general' => $estadoGeneral,
+        'estado_general' => $estadoGeneral, // Estado global
+        'sujeto_devolucion_global' => $sujetoDevolucionGlobal, // Opción global
         // Datos adicionales para Préstamo y Constancia de Salida
         'dias_prestamo' => isset($_POST['dias_prestamo']) ? intval($_POST['dias_prestamo']) : null,
         'fecha_devolucion_prestamo' => isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : null
     );
 
-    // 4. Generar PDFs temporales (EXACTAMENTE IGUAL QUE procesar_pdf.php)
+    // 6. Generar PDFs temporales
     $archivosTemporales = array();
     
     if (!file_exists(__DIR__ . '/pdfs')) {
@@ -168,7 +177,7 @@ try {
         );
     }
 
-    // 5. Si hay un solo archivo, mostrarlo directamente
+    // 7. Si hay un solo archivo, mostrarlo directamente
     if (count($archivosTemporales) === 1) {
         $archivo = $archivosTemporales[0];
         
@@ -189,7 +198,7 @@ try {
             }
         });
     } else {
-        // Si hay múltiples archivos, combinarlos (EXACTAMENTE IGUAL QUE procesar_pdf.php)
+        // Si hay múltiples archivos, combinarlos
         $pdfCombinado = new Fpdi();
         $pdfCombinado->setPrintHeader(false);
         $pdfCombinado->setPrintFooter(false);

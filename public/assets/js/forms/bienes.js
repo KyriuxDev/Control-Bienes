@@ -1,4 +1,4 @@
-// VERSIÓN SIMPLIFICADA Y ROBUSTA
+// VERSIÓN SIMPLIFICADA Y ROBUSTA - CON OPCIONES GLOBALES
 (function() {
     'use strict';
     
@@ -96,21 +96,9 @@
                 <select name="bienes[${bIdx}][id_bien]" class="bien-select w-full rounded-lg border-gray-300 text-sm dark:bg-gray-700 dark:text-white" required>
                     ${optionsHTML}
                 </select>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div class="flex items-center gap-2">
-                        <label class="text-xs font-bold text-gray-500">Cantidad:</label>
-                        <input type="number" name="bienes[${bIdx}][cantidad]" value="1" min="1" class="w-full rounded-lg border-gray-300 dark:bg-gray-700 text-sm">
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <label class="text-xs font-bold text-gray-500">Estado:</label>
-                        <input type="text" name="bienes[${bIdx}][estado_fisico]" placeholder="Ej. Bueno" class="w-full rounded-lg border-gray-300 dark:bg-gray-700 text-sm">
-                    </div>
-                    <div class="flex items-center gap-2 constancia-only hidden">
-                        <label class="text-xs font-bold text-gray-500 flex items-center gap-1">
-                            <input type="checkbox" name="bienes[${bIdx}][sujeto_devolucion]" value="1" class="rounded text-primary">
-                            Sujeto a devolución
-                        </label>
-                    </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-xs font-bold text-gray-500">Cantidad:</label>
+                    <input type="number" name="bienes[${bIdx}][cantidad]" value="1" min="1" class="w-full rounded-lg border-gray-300 dark:bg-gray-700 text-sm">
                 </div>
             </div>
             <button type="button" onclick="eliminarFilaBien(this)" class="text-red-500 hover:bg-red-50 p-2 rounded-lg mt-1">
@@ -127,10 +115,6 @@
         }
         
         setTimeout(() => div.classList.remove('animate-pulse'), 300);
-        
-        if (typeof window.updateConstanciaFields === 'function') {
-            window.updateConstanciaFields();
-        }
         
         bIdx++;
     };
@@ -153,6 +137,23 @@
         todosLosSelects.forEach(select => {
             agregarListenerASelect(select);
         });
+
+        // Manejar el campo "Otro" para el estado
+        const estadoGeneral = document.getElementById('estado_general');
+        const otroEstadoContainer = document.getElementById('otro-estado-container');
+        
+        if (estadoGeneral && otroEstadoContainer) {
+            estadoGeneral.addEventListener('change', function() {
+                if (this.value === 'Otro') {
+                    otroEstadoContainer.classList.remove('hidden');
+                    document.getElementById('estado_otro').required = true;
+                } else {
+                    otroEstadoContainer.classList.add('hidden');
+                    document.getElementById('estado_otro').required = false;
+                    document.getElementById('estado_otro').value = '';
+                }
+            });
+        }
 
         // Manejar submit del formulario de crear bien
         const formBien = document.getElementById('form-bien');

@@ -346,6 +346,64 @@ require __DIR__ . '/layouts/head.php';
                     </div>
                 </div>
 
+                <!-- Opciones Globales de Bienes -->
+                <div class="px-6 pt-6 pb-4 bg-gray-50/50 dark:bg-white/5 border-b border-imss-border dark:border-gray-700">
+                    <h4 class="text-sm font-bold text-imss-dark dark:text-white mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary text-base">settings</span>
+                        Configuración General de Bienes
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Estado físico global -->
+                        <div>
+                            <label class="block text-xs font-medium text-imss-dark dark:text-gray-200 mb-1">
+                                Estado Físico (para todos los bienes)
+                            </label>
+                            <select name="estado_general" id="estado_general" class="w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm">
+                                <option value="Nuevo">Nuevo</option>
+                                <option value="Buenas condiciones" selected>Buenas condiciones</option>
+                                <option value="Dañado">Dañado</option>
+                                <option value="Otro">Otro (especificar)</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Input para "Otro" estado (oculto por defecto) -->
+                        <div id="otro-estado-container" class="hidden">
+                            <label class="block text-xs font-medium text-imss-dark dark:text-gray-200 mb-1">
+                                Especifique el estado
+                            </label>
+                            <input type="text" 
+                                   name="estado_otro" 
+                                   id="estado_otro"
+                                   placeholder="Ej. Desgastado, En reparación..."
+                                   class="w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm">
+                        </div>
+                        
+                        <!-- Sujeto a devolución (solo visible para Constancia de Salida) -->
+                        <div class="constancia-only hidden">
+                            <label class="block text-xs font-medium text-imss-dark dark:text-gray-200 mb-1">
+                                ¿Sujeto a devolución?
+                            </label>
+                            <div class="flex items-center gap-4 mt-2">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" 
+                                           name="sujeto_devolucion_global" 
+                                           value="1" 
+                                           class="text-primary focus:ring-primary">
+                                    <span class="text-sm text-imss-dark dark:text-white">Sí</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" 
+                                           name="sujeto_devolucion_global" 
+                                           value="0" 
+                                           checked
+                                           class="text-primary focus:ring-primary">
+                                    <span class="text-sm text-imss-dark dark:text-white">No</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Lista de Bienes -->
                 <div class="p-6">
                    <div id="contenedor-bienes" class="space-y-3">
@@ -362,31 +420,13 @@ require __DIR__ . '/layouts/head.php';
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                    <div class="flex items-center gap-2">
-                                        <label class="text-xs font-bold text-gray-500 whitespace-nowrap">Cantidad:</label>
-                                        <input type="number" 
-                                            name="bienes[0][cantidad]" 
-                                            value="1" 
-                                            min="1" 
-                                            class="w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm">
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <label class="text-xs font-bold text-gray-500 whitespace-nowrap">Estado:</label>
-                                        <input type="text" 
-                                            name="bienes[0][estado_fisico]" 
-                                            placeholder="Ej. Bueno"
-                                            class="w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm">
-                                    </div>
-                                    <div class="flex items-center gap-2 constancia-only hidden">
-                                        <label class="text-xs font-bold text-gray-500 whitespace-nowrap flex items-center gap-1">
-                                            <input type="checkbox" 
-                                                name="bienes[0][sujeto_devolucion]" 
-                                                value="1"
-                                                class="rounded border-gray-300 text-primary focus:ring-primary">
-                                            Sujeto a devolución
-                                        </label>
-                                    </div>
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-bold text-gray-500 whitespace-nowrap">Cantidad:</label>
+                                    <input type="number" 
+                                        name="bienes[0][cantidad]" 
+                                        value="1" 
+                                        min="1" 
+                                        class="w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm">
                                 </div>
                             </div>
                             <button type="button" onclick="eliminarFilaBien(this)" class="text-red-500 hover:bg-red-50 p-2 rounded-lg mt-1">
@@ -401,7 +441,7 @@ require __DIR__ . '/layouts/head.php';
                         <div class="flex items-center gap-2">
                             <span class="material-symbols-outlined text-blue-500">info</span>
                             <p class="text-sm text-blue-800 dark:text-blue-200">
-                                <span class="font-bold">Nota:</span> Puede agregar múltiples bienes al documento. Use el botón "Agregar Bien" para añadir más elementos.
+                                <span class="font-bold">Nota:</span> El estado físico y condición de devolución se aplicarán a todos los bienes de este documento.
                             </p>
                         </div>
                     </div>

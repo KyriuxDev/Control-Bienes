@@ -1,5 +1,5 @@
 <?php
-// public/generadores/GeneradorSalidaPDF.php
+// public/generadores/GeneradorSalidaPDF.php - VERSIÓN CON OPCIONES GLOBALES
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 use setasign\Fpdi\Tcpdf\Fpdi;
@@ -92,18 +92,6 @@ class GeneradorSalidaPDF {
         $this->pdf->SetAlpha(1.0);
     }
     
-    /**
-     * Verifica si algún bien tiene sujeto_devolucion = 1
-     */
-    private function tieneSujetoDevolucion($bienes) {
-        foreach ($bienes as $item) {
-            if (isset($item['sujeto_devolucion']) && $item['sujeto_devolucion'] == 1) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
     public function generar($trabajador, $bienes, $datosAdicionales, $rutaSalida) {
         $this->pdf = new Fpdi();
         $this->pdf->setPrintHeader(false); 
@@ -170,25 +158,16 @@ class GeneradorSalidaPDF {
         $this->pdf->SetXY(42, 129);
         $this->pdf->Write(10, $proposito);
 
-        // ESTADO DE LOS BIENES - Obtener el estado del primer bien o usar el general
-        $estadoMostrar = 'Bueno'; // Por defecto
-        
-        // Prioridad 1: Estado general si existe
-        if (isset($datosAdicionales['estado_general']) && !empty($datosAdicionales['estado_general'])) {
-            $estadoMostrar = $datosAdicionales['estado_general'];
-        } 
-        // Prioridad 2: Estado del primer bien si existe
-        else if (!empty($bienes) && isset($bienes[0]['estado_fisico']) && !empty($bienes[0]['estado_fisico'])) {
-            $estadoMostrar = $bienes[0]['estado_fisico'];
-        }
+        // ESTADO DE LOS BIENES - USAR ESTADO GLOBAL
+        $estadoMostrar = isset($datosAdicionales['estado_general']) ? $datosAdicionales['estado_general'] : 'Buenas condiciones';
         
         $this->pdf->SetXY(115, 137);
         $this->pdf->Write(10, $estadoMostrar);
 
-        // DEVOLUCIÓN (SI/NO) - Verificar si algún bien tiene sujeto_devolucion
-        $tieneSujetoDevolucion = $this->tieneSujetoDevolucion($bienes);
+        // DEVOLUCIÓN (SI/NO) - USAR OPCIÓN GLOBAL
+        $sujetoDevolucionGlobal = isset($datosAdicionales['sujeto_devolucion_global']) ? $datosAdicionales['sujeto_devolucion_global'] : 0;
         
-        if ($tieneSujetoDevolucion) {
+        if ($sujetoDevolucionGlobal == 1) {
             // Marcar SÍ
             $this->pdf->SetXY(77, 144);
             $this->pdf->Write(15, 'X');
@@ -258,7 +237,6 @@ class GeneradorSalidaPDF {
             $this->pdf->SetXY(100, $y);
             $this->pdf->Write($lineHeight, $descripcion);
             
-            
             $y += $lineHeight;
         }
     }
@@ -276,36 +254,31 @@ class GeneradorSalidaPDF {
         $this->pdf->Cell(0, 5, "FOLIO: " . $datosAdicionales['folio'], 0, 1, 'C');
         $this->pdf->Ln(8);
 
+        // Información de estado global
+        $estadoGlobal = isset($datosAdicionales['estado_general']) ? $datosAdicionales['estado_general'] : 'Buenas condiciones';
+        $sujetoDevolucionGlobal = isset($datosAdicionales['sujeto_devolucion_global']) && $datosAdicionales['sujeto_devolucion_global'] == 1 ? 'SÍ' : 'NO';
+        
+        $this->pdf->SetFont('helvetica', '', 8);
+        $this->pdf->Cell(0, 5, "Estado General: " . $estadoGlobal . " | Sujeto a Devolución: " . $sujetoDevolucionGlobal, 0, 1, 'L');
+        $this->pdf->Ln(3);
+
         // TABLA DE BIENES
         $this->pdf->SetFillColor(235, 235, 235);
         $this->pdf->SetFont('helvetica', '', 8);
         
-        $w = array(15, 25, 35, 25, 25, 25, 30);
+        $w = array(15, 25, 45, 30, 30, 35);
         
         $this->pdf->Cell($w[0], 7, 'CANT.', 1, 0, 'C', 1);
         $this->pdf->Cell($w[1], 7, 'NAT.', 1, 0, 'C', 1);
         $this->pdf->Cell($w[2], 7, 'DESCRIPCIÓN', 1, 0, 'C', 1);
         $this->pdf->Cell($w[3], 7, 'MARCA', 1, 0, 'C', 1);
         $this->pdf->Cell($w[4], 7, 'MODELO', 1, 0, 'C', 1);
-        $this->pdf->Cell($w[5], 7, 'SERIE', 1, 0, 'C', 1);
-        $this->pdf->Cell($w[6], 7, 'ESTADO / DEV', 1, 1, 'C', 1);
+        $this->pdf->Cell($w[5], 7, 'SERIE', 1, 1, 'C', 1);
 
         $this->pdf->SetFont('helvetica', '', 7);
         foreach ($bienes as $item) {
             $bien = $item['bien'];
             $cant = isset($item['cantidad']) ? $item['cantidad'] : '1';
-            
-            // Estado físico
-            $estado = isset($item['estado_fisico']) && !empty($item['estado_fisico']) 
-                ? $item['estado_fisico'] 
-                : 'Bueno';
-            
-            // Sujeto a devolución
-            $devolucion = (isset($item['sujeto_devolucion']) && $item['sujeto_devolucion'] == 1) 
-                ? 'SÍ' 
-                : 'NO';
-            
-            $estadoCompleto = $estado . " / " . $devolucion;
 
             $nb = $this->pdf->getNumLines($bien->getDescripcion(), $w[2]);
             $h = 5 * $nb;
@@ -316,8 +289,7 @@ class GeneradorSalidaPDF {
             $this->pdf->MultiCell($w[2], $h, $bien->getDescripcion(), 1, 'L', 0, 0);
             $this->pdf->MultiCell($w[3], $h, $bien->getMarca(), 1, 'L', 0, 0);
             $this->pdf->MultiCell($w[4], $h, $bien->getModelo(), 1, 'L', 0, 0);
-            $this->pdf->MultiCell($w[5], $h, $bien->getSerie(), 1, 'L', 0, 0);
-            $this->pdf->MultiCell($w[6], $h, $estadoCompleto, 1, 'L', 0, 1);
+            $this->pdf->MultiCell($w[5], $h, $bien->getSerie(), 1, 'L', 0, 1);
         }
 
         // FIRMAS
