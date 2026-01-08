@@ -139,7 +139,7 @@ require __DIR__ . '/layouts/head.php';
                 onkeyup="filtrarBienes()"/>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="relative group">
                 <label class="block text-xs font-semibold text-imss-gray dark:text-gray-400 mb-1.5 uppercase tracking-wide">Naturaleza</label>
                 <div class="relative">
@@ -156,20 +156,7 @@ require __DIR__ . '/layouts/head.php';
                 </div>
             </div>
 
-            <div class="relative group">
-                <label class="block text-xs font-semibold text-imss-gray dark:text-gray-400 mb-1.5 uppercase tracking-wide">Ordenar por</label>
-                <div class="relative">
-                    <select id="filter-orden" onchange="ordenarBienes()" class="appearance-none w-full bg-white dark:bg-[#1e2a1e] border border-imss-border dark:border-gray-800 text-imss-dark dark:text-white text-sm rounded-lg p-2.5 pr-8 focus:ring-1 focus:ring-primary outline-none cursor-pointer">
-                        <option value="id_desc">ID (Más reciente)</option>
-                        <option value="id_asc">ID (Más antiguo)</option>
-                        <option value="descripcion_asc">Descripción (A-Z)</option>
-                        <option value="descripcion_desc">Descripción (Z-A)</option>
-                    </select>
-                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-imss-gray">
-                        <span class="material-symbols-outlined">expand_more</span>
-                    </div>
-                </div>
-            </div>
+           
 
             <div class="flex items-end">
                 <button onclick="limpiarFiltros()" class="w-full h-[42px] px-4 bg-gray-100 dark:bg-gray-800 border border-imss-border dark:border-gray-700 text-imss-dark dark:text-white text-sm font-semibold rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center gap-2 transition-all">

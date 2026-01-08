@@ -1,4 +1,4 @@
-// public/assets/js/generador_documentos.js - VERSIÓN CON CAMPOS INDEPENDIENTES PARA PRÉSTAMO Y CONSTANCIA
+// public/assets/js/generador_documentos.js - VERSIÓN CORREGIDA CON DEBUGGING
 
 window.updateConstanciaFields = function () {
     const checkboxes = document.querySelectorAll('input[name="tipos_movimiento[]"]:checked');
@@ -104,6 +104,8 @@ window.calcularDiasPrestamo = function() {
 };
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔵 Inicializando generador_documentos.js');
+    
     window.updateConstanciaFields();
 
     // Listener para cambios en tipos de movimiento
@@ -161,8 +163,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// FUNCIÓN DE VISTA PREVIA CORREGIDA
 window.vistaPrevia = function () {
-    console.log('Vista previa iniciada');
+    console.log('🔍 Vista previa iniciada');
     
     const form = document.querySelector('#document-form');
     
@@ -172,107 +175,153 @@ window.vistaPrevia = function () {
         return;
     }
     
-    console.log('Formulario encontrado');
+    console.log('✅ Formulario encontrado');
     
-    // 1. Validar que al menos un tipo esté seleccionado
-    const tiposSeleccionados = form.querySelectorAll('input[name="tipos_movimiento[]"]:checked');
-    if (tiposSeleccionados.length === 0) {
-        alert('Por favor seleccione al menos un tipo de documento');
-        return;
-    }
-    
-    console.log('Tipos de movimiento validados:', tiposSeleccionados.length);
-    
-    // 2. Validar trabajadores
-    const selectRecibe = form.querySelector('select[name="matricula_recibe"]');
-    const selectEntrega = form.querySelector('select[name="matricula_entrega"]');
-    
-    if (!selectRecibe || !selectRecibe.value) {
-        alert('Por favor seleccione el trabajador que recibe');
-        if (selectRecibe) selectRecibe.focus();
-        return;
-    }
-    
-    if (!selectEntrega || !selectEntrega.value) {
-        alert('Por favor seleccione el trabajador que entrega');
-        if (selectEntrega) selectEntrega.focus();
-        return;
-    }
-    
-    console.log('Trabajadores validados');
-
-    // 3. Validar al menos un bien
-    const primerBien = form.querySelector('select[name="bienes[0][id_bien]"]');
-    if (!primerBien || !primerBien.value) {
-        alert('Por favor seleccione al menos un bien en la lista');
-        if (primerBien) primerBien.focus();
-        return;
-    }
-    
-    console.log('Bienes validados');
-
-    // 4. Validar fecha de devolución si Préstamo está seleccionado
-    const tienePrestamo = Array.from(tiposSeleccionados).some(function(cb) {
-        return cb.value === 'Prestamo';
-    });
-    
-    if (tienePrestamo) {
-        const fechaDevolucionInput = form.querySelector('input[name="fecha_devolucion_prestamo"]');
-        const diasPrestamoHidden = form.querySelector('input[name="dias_prestamo"]');
+    // Validación paso a paso con mensajes específicos
+    try {
+        // 1. Validar que al menos un tipo esté seleccionado
+        const tiposSeleccionados = form.querySelectorAll('input[name="tipos_movimiento[]"]:checked');
+        if (tiposSeleccionados.length === 0) {
+            alert('❌ Por favor seleccione al menos un tipo de documento (Resguardo, Préstamo o Constancia de Salida)');
+            // Hacer scroll al elemento
+            document.querySelector('input[name="tipos_movimiento[]"]').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        console.log('✅ Tipos de movimiento validados:', tiposSeleccionados.length);
         
-        if (fechaDevolucionInput && !fechaDevolucionInput.value) {
-            alert('Por favor seleccione la fecha de devolución del préstamo');
-            fechaDevolucionInput.focus();
+        // 2. Validar trabajadores
+        const selectRecibe = form.querySelector('select[name="matricula_recibe"]');
+        const selectEntrega = form.querySelector('select[name="matricula_entrega"]');
+        
+        if (!selectRecibe || !selectRecibe.value) {
+            alert('❌ Por favor seleccione el trabajador que recibe');
+            if (selectRecibe) {
+                selectRecibe.focus();
+                selectRecibe.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             return;
         }
         
-        if (diasPrestamoHidden && (!diasPrestamoHidden.value || diasPrestamoHidden.value <= 0)) {
-            alert('La fecha de devolución debe ser posterior a la fecha de emisión');
-            fechaDevolucionInput.focus();
+        if (!selectEntrega || !selectEntrega.value) {
+            alert('❌ Por favor seleccione el trabajador que entrega');
+            if (selectEntrega) {
+                selectEntrega.focus();
+                selectEntrega.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             return;
         }
-    }
-    
-    // 5. Validar fecha de devolución si Constancia de salida con sujeto a devolución está seleccionado
-    const tieneConstancia = Array.from(tiposSeleccionados).some(function(cb) {
-        return cb.value === 'Constancia de salida';
-    });
-    
-    if (tieneConstancia) {
-        const sujetoDevolucionSi = form.querySelector('input[name="sujeto_devolucion_global"][value="1"]');
-        if (sujetoDevolucionSi && sujetoDevolucionSi.checked) {
-            const fechaDevolucionConstanciaInput = form.querySelector('input[name="fecha_devolucion_constancia"]');
-            if (fechaDevolucionConstanciaInput && !fechaDevolucionConstanciaInput.value) {
-                alert('Por favor seleccione la fecha de devolución para la constancia de salida');
-                fechaDevolucionConstanciaInput.focus();
+        console.log('✅ Trabajadores validados');
+
+        // 3. Validar al menos un bien
+        const primerBien = form.querySelector('select[name="bienes[0][id_bien]"]');
+        if (!primerBien || !primerBien.value) {
+            alert('❌ Por favor seleccione al menos un bien en la lista');
+            if (primerBien) {
+                primerBien.focus();
+                primerBien.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
+        }
+        console.log('✅ Bienes validados');
+
+        // 4. Validar fecha de devolución si Préstamo está seleccionado
+        const tienePrestamo = Array.from(tiposSeleccionados).some(function(cb) {
+            return cb.value === 'Prestamo';
+        });
+        
+        if (tienePrestamo) {
+            const fechaDevolucionInput = form.querySelector('input[name="fecha_devolucion_prestamo"]');
+            const diasPrestamoHidden = form.querySelector('input[name="dias_prestamo"]');
+            
+            if (fechaDevolucionInput && !fechaDevolucionInput.value) {
+                alert('❌ Por favor seleccione la fecha de devolución del préstamo');
+                fechaDevolucionInput.focus();
+                fechaDevolucionInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
+            
+            if (diasPrestamoHidden && (!diasPrestamoHidden.value || diasPrestamoHidden.value <= 0)) {
+                alert('❌ La fecha de devolución debe ser posterior a la fecha de emisión');
+                fechaDevolucionInput.focus();
+                fechaDevolucionInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            console.log('✅ Validación de préstamo completada');
         }
-    }
-    
-    console.log('Validaciones completadas');
-
-    // 6. Configurar envío temporal para vista previa
-    const actionOriginal = form.action;
-    const targetOriginal = form.target;
-    
-    console.log('Configurando vista previa...');
-    form.action = 'vista_previa_pdf.php';
-    form.target = '_blank';
-
-    // Enviar formulario
-    try {
-        form.submit();
-        console.log('Formulario enviado');
         
-        // Restaurar formulario después de enviar
+        // 5. Validar fecha de devolución si Constancia de salida con sujeto a devolución está seleccionado
+        const tieneConstancia = Array.from(tiposSeleccionados).some(function(cb) {
+            return cb.value === 'Constancia de salida';
+        });
+        
+        if (tieneConstancia) {
+            const sujetoDevolucionSi = form.querySelector('input[name="sujeto_devolucion_global"][value="1"]');
+            if (sujetoDevolucionSi && sujetoDevolucionSi.checked) {
+                const fechaDevolucionConstanciaInput = form.querySelector('input[name="fecha_devolucion_constancia"]');
+                if (fechaDevolucionConstanciaInput && !fechaDevolucionConstanciaInput.value) {
+                    alert('❌ Por favor seleccione la fecha de devolución para la constancia de salida');
+                    fechaDevolucionConstanciaInput.focus();
+                    fechaDevolucionConstanciaInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+            }
+            console.log('✅ Validación de constancia completada');
+        }
+        
+        console.log('✅ Todas las validaciones completadas');
+
+        // 6. Mostrar indicador de carga
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = 'vista-previa-loading';
+        loadingDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]';
+        loadingDiv.innerHTML = `
+            <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-2xl flex flex-col items-center gap-4">
+                <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+                <p class="text-lg font-semibold text-gray-700 dark:text-white">Generando vista previa...</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Por favor espere</p>
+            </div>
+        `;
+        document.body.appendChild(loadingDiv);
+
+        // 7. Configurar envío temporal para vista previa
+        const actionOriginal = form.action;
+        const targetOriginal = form.target;
+        
+        console.log('📤 Configurando vista previa...');
+        console.log('Action original:', actionOriginal);
+        
+        // Usar ruta relativa
+        form.action = 'vista_previa_pdf.php';
+        form.target = '_blank';
+
+        console.log('Nueva action:', form.action);
+
+        // 8. Enviar formulario
+        console.log('📤 Enviando formulario...');
+        form.submit();
+        
+        // 9. Restaurar formulario y remover loading después de un pequeño delay
         setTimeout(function() {
             form.action = actionOriginal;
             form.target = targetOriginal;
-            console.log('Formulario restaurado');
-        }, 200);
+            
+            // Remover loading
+            const loading = document.getElementById('vista-previa-loading');
+            if (loading) {
+                loading.remove();
+            }
+            
+            console.log('✅ Formulario restaurado');
+        }, 2000);
+        
     } catch (error) {
-        console.error('Error al enviar formulario:', error);
+        console.error('❌ Error en vista previa:', error);
         alert('Error al generar vista previa: ' + error.message);
+        
+        // Remover loading en caso de error
+        const loading = document.getElementById('vista-previa-loading');
+        if (loading) {
+            loading.remove();
+        }
     }
 };

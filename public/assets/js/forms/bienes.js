@@ -1,8 +1,16 @@
-// VERSIÓN SIMPLIFICADA Y ROBUSTA - CON OPCIONES GLOBALES
+// VERSIÓN CON DETECCIÓN DE CONTEXTO - Solo actúa en generador_documentos.php
 (function() {
     'use strict';
     
-    console.log('🔵 bienes.js cargado');
+    // CRÍTICO: Solo inicializar si estamos en la página del generador de documentos
+    const esGeneradorDocumentos = window.location.pathname.includes('generador_documentos.php');
+    
+    if (!esGeneradorDocumentos) {
+        console.log('🚫 bienes.js: No estamos en generador_documentos.php, saltando inicialización');
+        return;
+    }
+    
+    console.log('🔵 [GENERADOR] bienes.js cargado');
     
     let bIdx = 1;
 
@@ -21,7 +29,7 @@
     // Función para actualizar todos los dropdowns de bienes
     window.actualizarDropdownsBienes = function () {
         if (!window.APP_DATA || !window.APP_DATA.bienesCatalogo) {
-            console.error('❌ APP_DATA no disponible');
+            console.error('❌ [GENERADOR] APP_DATA no disponible');
             return;
         }
 
@@ -72,7 +80,7 @@
         const contenedor = document.getElementById('contenedor-bienes');
         
         if (!contenedor) {
-            console.error('❌ No se encontró el contenedor de bienes');
+            console.error('❌ [GENERADOR] No se encontró el contenedor de bienes');
             return;
         }
         
@@ -132,6 +140,7 @@
     }
 
     function inicializar() {
+        console.log('🟢 [GENERADOR] Inicializando bienes.js');
         
         const todosLosSelects = document.querySelectorAll('select[name^="bienes["][name$="][id_bien]"]');
         todosLosSelects.forEach(select => {
@@ -155,14 +164,14 @@
             });
         }
 
-        // Manejar submit del formulario de crear bien
+        // Manejar submit del formulario de crear bien SOLO EN GENERADOR
         const formBien = document.getElementById('form-bien');
         if (formBien) {
-            console.log('✅ Formulario #form-bien encontrado, agregando manejador');
+            console.log('✅ [GENERADOR] Formulario #form-bien encontrado, agregando manejador');
             
             formBien.addEventListener('submit', function(e) {
                 e.preventDefault();
-                console.log('📤 Enviando formulario de bien...');
+                console.log('📤 [GENERADOR] Enviando formulario de bien...');
                 
                 const formData = new FormData(this);
                 
@@ -177,6 +186,9 @@
                     return;
                 }
                 
+                // CRÍTICO: Asegurar que NO se envíe ID (solo creación)
+                formData.delete('id_bien');
+                
                 // Deshabilitar botón
                 const submitBtn = this.querySelector('button[type="submit"]');
                 const originalText = submitBtn ? submitBtn.textContent : 'Crear Registro';
@@ -190,11 +202,11 @@
                     body: formData
                 })
                 .then(r => {
-                    console.log('📥 Respuesta recibida:', r.status);
+                    console.log('📥 [GENERADOR] Respuesta recibida:', r.status);
                     return r.json();
                 })
                 .then(data => {
-                    console.log('📦 Datos recibidos:', data);
+                    console.log('📦 [GENERADOR] Datos recibidos:', data);
                     
                     if (data.success) {
                         // Cerrar modal
@@ -212,12 +224,11 @@
                         
                         // Actualizar catálogo en memoria
                         if (window.APP_DATA && window.APP_DATA.bienesCatalogo && data.bien) {
-                            console.log('✅ Agregando bien al catálogo:', data.bien);
+                            console.log('✅ [GENERADOR] Agregando bien al catálogo:', data.bien);
                             window.APP_DATA.bienesCatalogo.push(data.bien);
                             window.actualizarDropdownsBienes();
                         } else {
-                            // Si no hay APP_DATA, recargar página
-                            console.log('⚠️ APP_DATA no disponible, recargando página...');
+                            console.log('⚠️ [GENERADOR] APP_DATA no disponible, recargando página...');
                             setTimeout(() => location.reload(), 1000);
                         }
                     } else {
@@ -227,11 +238,11 @@
                         } else {
                             alert(mensaje);
                         }
-                        console.error('❌ Error del servidor:', mensaje);
+                        console.error('❌ [GENERADOR] Error del servidor:', mensaje);
                     }
                 })
                 .catch(error => {
-                    console.error('❌ Error en la petición:', error);
+                    console.error('❌ [GENERADOR] Error en la petición:', error);
                     const mensaje = 'Error de conexión al guardar el bien';
                     if (typeof mostrarNotificacion === 'function') {
                         mostrarNotificacion(mensaje, 'error');
@@ -248,7 +259,7 @@
                 });
             });
         } else {
-            console.warn('⚠️ Formulario #form-bien no encontrado');
+            console.warn('⚠️ [GENERADOR] Formulario #form-bien no encontrado');
         }
     }
 })();

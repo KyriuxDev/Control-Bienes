@@ -1,4 +1,4 @@
-// public/assets/js/gestion_bienes.js - VERSIÓN FINAL CORREGIDA
+// public/assets/js/gestion_bienes.js - VERSIÓN CORREGIDA CON FIX DE EDICIÓN
 
 (function() {
     'use strict';
@@ -37,27 +37,32 @@
             return;
         }
 
-        form.addEventListener('submit', function(e) {
+        // CRÍTICO: Remover listeners previos para evitar duplicados
+        const formClone = form.cloneNode(true);
+        form.parentNode.replaceChild(formClone, form);
+        const formLimpio = document.getElementById('form-bien');
+
+        formLimpio.addEventListener('submit', function(e) {
             e.preventDefault();
+            e.stopImmediatePropagation(); // Evitar propagación
             
-            console.log('📝 Formulario enviado');
+            console.log('📝 [GESTIÓN BIENES] Formulario enviado');
             
             const formData = new FormData(this);
             
             // CORRECCIÓN: Obtener el ID directamente del campo hidden
             const idBienInput = document.getElementById('id_bien');
-            const idBien = idBienInput ? idBienInput.value : '';
+            const idBien = idBienInput ? idBienInput.value.trim() : '';
             
-            console.log('ID Bien del campo:', idBien);
-            console.log('ID Bien está vacío?', idBien === '');
-            console.log('ID Bien es null?', idBien === null);
-            console.log('ID Bien es undefined?', idBien === undefined);
+            console.log('📋 [GESTIÓN BIENES] ID Bien del campo:', idBien);
+            console.log('📋 [GESTIÓN BIENES] Tipo de ID:', typeof idBien);
+            console.log('📋 [GESTIÓN BIENES] ID está vacío?', idBien === '');
             
             // Validar descripción
             const descripcion = formData.get('descripcion');
             if (!descripcion || descripcion.trim() === '') {
                 mostrarNotificacion('La descripción es obligatoria', 'error');
-                return;
+                return false;
             }
             
             // Deshabilitar botón
@@ -66,37 +71,41 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">refresh</span> Guardando...';
             
-            // CORRECCIÓN CRÍTICA: Determinar la acción basándose en si el ID existe Y NO está vacío
+            // LÓGICA MEJORADA: Determinar la acción basándose en si el ID existe Y NO está vacío
             let url, accion;
             
-            if (idBien && idBien.trim() !== '' && idBien !== 'null' && idBien !== 'undefined') {
-                // HAY ID válido → ACTUALIZAR
+            // Verificación estricta: debe ser un string no vacío Y numérico
+            const esEdicion = idBien !== '' && idBien !== 'null' && idBien !== 'undefined' && !isNaN(parseInt(idBien));
+            
+            if (esEdicion) {
                 url = 'api/actualizar_bien.php';
                 accion = 'actualizar';
-                console.log('✏️ MODO: ACTUALIZAR (ID existe:', idBien + ')');
+                console.log('✏️ [GESTIÓN BIENES] MODO: ACTUALIZAR (ID:', idBien + ')');
             } else {
-                // NO hay ID → CREAR NUEVO
                 url = 'api/guardar_bien.php';
                 accion = 'crear';
-                console.log('🆕 MODO: CREAR NUEVO (sin ID)');
+                console.log('🆕 [GESTIÓN BIENES] MODO: CREAR NUEVO');
+                
+                // IMPORTANTE: Asegurar que el ID esté completamente vacío al crear
+                formData.delete('id_bien');
             }
             
-            console.log('URL seleccionada:', url);
-            console.log('Acción:', accion);
+            console.log('🌐 [GESTIÓN BIENES] URL seleccionada:', url);
+            console.log('⚙️ [GESTIÓN BIENES] Acción:', accion);
             
             fetch(url, {
                 method: 'POST',
                 body: formData
             })
             .then(r => {
-                console.log('Respuesta recibida:', r.status);
+                console.log('📥 [GESTIÓN BIENES] Respuesta recibida:', r.status);
                 if (!r.ok) {
                     throw new Error('Error HTTP: ' + r.status);
                 }
                 return r.json();
             })
             .then(data => {
-                console.log('Datos recibidos:', data);
+                console.log('📦 [GESTIÓN BIENES] Datos recibidos:', data);
                 
                 if (data.success) {
                     cerrarModalBien();
@@ -114,14 +123,18 @@
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
+                console.error('❌ [GESTIÓN BIENES] Error:', error);
                 mostrarNotificacion('Error de conexión: ' + error.message, 'error');
             })
             .finally(() => {
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalText;
             });
+            
+            return false;
         });
+        
+        console.log('✅ [GESTIÓN BIENES] Formulario inicializado correctamente');
     }
 
     // Funciones de filtrado y ordenamiento
@@ -270,6 +283,12 @@
     window.abrirModalNuevoBien = function() {
         console.log('🆕 Abriendo modal para NUEVO bien');
         
+        // Cerrar modal de detalle si está abierto
+        const modalDetalle = document.getElementById('modal-detalle-bien');
+        if (modalDetalle && !modalDetalle.classList.contains('pointer-events-none')) {
+            toggleModal('modal-detalle-bien');
+        }
+        
         limpiarFormularioBien();
         
         // Cambiar título y botón para CREAR
@@ -376,9 +395,15 @@
         toggleModal('modal-detalle-bien');
     };
 
-    // FUNCIÓN PARA EDITAR BIEN
+    // FUNCIÓN PARA EDITAR BIEN - CORREGIDA CON VALIDACIÓN EXTRA
     window.editarBien = function(id) {
-        console.log('✏️ Editando bien con ID:', id);
+        console.log('✏️ [GESTIÓN BIENES] Editando bien con ID:', id);
+        
+        // CORRECCIÓN 1: Cerrar el modal de detalle si está abierto
+        const modalDetalle = document.getElementById('modal-detalle-bien');
+        if (modalDetalle && !modalDetalle.classList.contains('pointer-events-none')) {
+            modalDetalle.classList.add('opacity-0', 'pointer-events-none');
+        }
         
         const row = document.querySelector(`.bien-row[data-id="${id}"]`);
         if (!row) {
@@ -386,34 +411,58 @@
             return;
         }
         
-        // Primero limpiar el formulario
+        // Primero limpiar el formulario completamente
         limpiarFormularioBien();
         
-        // IMPORTANTE: Establecer el ID en el campo oculto DESPUÉS de limpiar
-        const idBienInput = document.getElementById('id_bien');
-        if (idBienInput) {
-            idBienInput.value = id;
-            console.log('ID establecido en el campo:', idBienInput.value);
-        }
-        
-        // Llenar formulario con los datos actuales
-        document.getElementById('descripcion').value = row.dataset.descripcion;
-        document.getElementById('naturaleza').value = row.dataset.naturaleza;
-        document.getElementById('marca').value = row.dataset.marca;
-        document.getElementById('modelo').value = row.dataset.modelo;
-        document.getElementById('serie').value = row.dataset.serie;
-        
-        console.log('Formulario llenado con datos del bien:', {
-            id: id,
-            descripcion: row.dataset.descripcion,
-            naturaleza: row.dataset.naturaleza
-        });
-        
-        // Cambiar título y botón para EDITAR
-        document.getElementById('modal-bien-title').innerHTML = '<span class="material-symbols-outlined">edit</span> EDITAR BIEN';
-        document.getElementById('btn-submit-bien').textContent = 'Actualizar Bien';
-        
-        toggleModal('modal-bien');
+        // CRÍTICO: Esperar un tick del event loop para asegurar que la limpieza se completó
+        setTimeout(() => {
+            // IMPORTANTE: Establecer el ID en el campo oculto
+            const idBienInput = document.getElementById('id_bien');
+            if (idBienInput) {
+                idBienInput.value = String(id); // Asegurar que es string
+                console.log('✅ [GESTIÓN BIENES] ID establecido:', idBienInput.value);
+                console.log('✅ [GESTIÓN BIENES] Tipo de dato:', typeof idBienInput.value);
+            } else {
+                console.error('❌ [GESTIÓN BIENES] Campo id_bien no encontrado');
+            }
+            
+            // Llenar formulario con los datos actuales
+            const descripcionInput = document.getElementById('descripcion');
+            const naturalezaInput = document.getElementById('naturaleza');
+            const marcaInput = document.getElementById('marca');
+            const modeloInput = document.getElementById('modelo');
+            const serieInput = document.getElementById('serie');
+            
+            if (descripcionInput) descripcionInput.value = row.dataset.descripcion;
+            if (naturalezaInput) naturalezaInput.value = row.dataset.naturaleza;
+            if (marcaInput) marcaInput.value = row.dataset.marca;
+            if (modeloInput) modeloInput.value = row.dataset.modelo;
+            if (serieInput) serieInput.value = row.dataset.serie;
+            
+            console.log('📋 [GESTIÓN BIENES] Formulario llenado:', {
+                id: String(id),
+                descripcion: row.dataset.descripcion,
+                naturaleza: row.dataset.naturaleza,
+                marca: row.dataset.marca,
+                modelo: row.dataset.modelo,
+                serie: row.dataset.serie
+            });
+            
+            // Cambiar título y botón para EDITAR
+            const modalTitle = document.getElementById('modal-bien-title');
+            const submitBtn = document.getElementById('btn-submit-bien');
+            
+            if (modalTitle) {
+                modalTitle.innerHTML = '<span class="material-symbols-outlined">edit</span> EDITAR BIEN';
+            }
+            if (submitBtn) {
+                submitBtn.textContent = 'Actualizar Bien';
+            }
+            
+            // Abrir modal
+            toggleModal('modal-bien');
+            
+        }, 50); // Pequeño delay para asegurar que todo se complete
     };
 
     // FUNCIÓN PARA ELIMINAR BIEN
