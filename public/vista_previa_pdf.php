@@ -106,7 +106,7 @@ try {
     error_log("Validaciones iniciales completadas");
     
     // GENERAR FOLIO TEMPORAL PARA VISTA PREVIA
-    $folio = 'PREVIEW-' . $folioGenerator->generarFolio();
+    $folio = $folioGenerator->generarFolio();
     error_log("Folio temporal generado: $folio");
     
     $tiposMovimiento = $_POST['tipos_movimiento'];
