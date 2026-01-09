@@ -182,12 +182,12 @@ require __DIR__ . '/public/layouts/head.php';
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="bg-gray-50 dark:bg-white/5 text-xs text-imss-gray dark:text-gray-400 uppercase tracking-wider">
+                    <tr class="bg-gray-50 dark:bg-white/4 text-xs text-imss-gray dark:text-gray-400 uppercase tracking-wider">
                         <th class="px-6 py-3 font-semibold">Folio</th>
                         <th class="px-6 py-3 font-semibold">Tipo</th>
                         <th class="px-6 py-3 font-semibold">Responsable</th>
                         <th class="px-6 py-3 font-semibold">Fecha</th>
-                        <th class="px-6 py-3 font-semibold">Acciones</th>
+                        <!--<th class="px-6 py-3 font-semibold">Acciones</th>-->
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-imss-border dark:divide-gray-800 text-sm">
@@ -214,7 +214,7 @@ require __DIR__ . '/public/layouts/head.php';
                             if ($mov['tipo_movimiento'] == 'Resguardo') $tipoColor = 'green';
                             if ($mov['tipo_movimiento'] == 'Constancia de salida') $tipoColor = 'orange';
                             
-                            echo '<tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">';
+                            echo '<tr class="hover:bg-gray-50 dark:hover:bg-white/4 transition-colors">';
                             echo '<td class="px-6 py-4 font-medium text-imss-dark dark:text-white">' . htmlspecialchars($mov['folio']) . '</td>';
                             echo '<td class="px-6 py-4">
                                     <span class="bg-' . $tipoColor . '-100 text-' . $tipoColor . '-800 text-xs px-2 py-1 rounded-full font-medium">
@@ -223,9 +223,7 @@ require __DIR__ . '/public/layouts/head.php';
                                   </td>';
                             echo '<td class="px-6 py-4 text-imss-gray dark:text-gray-400">' . htmlspecialchars($mov['nombre_recibe']) . '</td>';
                             echo '<td class="px-6 py-4 text-imss-gray dark:text-gray-400">' . date('d/m/Y', strtotime($mov['fecha'])) . '</td>';
-                            echo '<td class="px-6 py-4">
-                                    <a href="#" class="text-primary hover:underline text-xs font-medium">Ver detalles</a>
-                                  </td>';
+                            
                             echo '</tr>';
                         }
                     }
@@ -244,13 +242,17 @@ require __DIR__ . '/public/layouts/head.php';
             <p class="text-sm text-imss-gray dark:text-gray-400">
                 © <?php echo date('Y'); ?> IMSS - Sistema de Control de Bienes
             </p>
+            <!--
             <div class="flex gap-4 text-xs text-imss-gray dark:text-gray-400">
+                
                 <a href="#" class="hover:text-primary transition-colors">Ayuda</a>
                 <span>•</span>
                 <a href="#" class="hover:text-primary transition-colors">Documentación</a>
                 <span>•</span>
                 <a href="#" class="hover:text-primary transition-colors">Contacto</a>
+               
             </div>
+             -->
         </div>
     </div>
 </footer>
