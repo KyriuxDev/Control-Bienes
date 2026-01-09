@@ -156,7 +156,7 @@ require __DIR__ . '/public/layouts/head.php';
             </a>
 
             <!-- Action 4: Reportes -->
-            <a href="#" class="flex flex-col items-center justify-center gap-3 bg-white dark:bg-[#1e2a1e] hover:bg-primary/5 dark:hover:bg-primary/10 border border-imss-border dark:border-gray-800 hover:border-primary/50 rounded-xl p-6 transition-all group text-center h-40">
+            <a href="/imss-control-bienes/public/reportes.php" class="flex flex-col items-center justify-center gap-3 bg-white dark:bg-[#1e2a1e] hover:bg-primary/5 dark:hover:bg-primary/10 border border-imss-border dark:border-gray-800 hover:border-primary/50 rounded-xl p-6 transition-all group text-center h-40">
                 <div class="bg-gray-100 dark:bg-gray-800 group-hover:bg-white dark:group-hover:bg-primary/20 p-3 rounded-full transition-colors shadow-sm">
                     <span class="material-symbols-outlined text-primary text-3xl">bar_chart</span>
                 </div>
