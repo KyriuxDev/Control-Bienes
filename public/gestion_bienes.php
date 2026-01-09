@@ -63,10 +63,6 @@ require __DIR__ . '/layouts/head.php';
             <p class="text-imss-gray dark:text-gray-400 text-base">Gestione, busque y edite el inventario de activos institucionales.</p>
         </div>
         <div class="flex items-center gap-3 w-full lg:w-auto">
-            <button onclick="exportarBienes()" class="flex-1 lg:flex-none h-10 px-4 bg-white dark:bg-surface-dark border border-imss-border dark:border-gray-800 text-imss-dark dark:text-white text-sm font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center gap-2 transition-all">
-                <span class="material-symbols-outlined">download</span>
-                Exportar
-            </button>
             <button onclick="abrirModalNuevoBien()" class="flex-1 lg:flex-none h-10 px-5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary-dark flex items-center justify-center gap-2 shadow-sm transition-all hover:shadow-md">
                 <span class="material-symbols-outlined">add</span>
                 Nuevo Bien

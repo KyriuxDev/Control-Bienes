@@ -503,9 +503,4 @@
         });
     };
 
-    // FUNCIÓN PARA EXPORTAR
-    window.exportarBienes = function() {
-        mostrarNotificacion('Funcionalidad de exportación en desarrollo', 'error');
-    };
-
 })();

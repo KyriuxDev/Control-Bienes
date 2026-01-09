@@ -302,11 +302,13 @@
     window.descargarDocumento = function(id) {
         console.log('Descargando documento:', id);
         
+        // Mostrar notificación de descarga
         if (typeof mostrarNotificacion === 'function') {
-            mostrarNotificacion('Funcionalidad en desarrollo', 'error');
-        } else {
-            alert('Funcionalidad en desarrollo');
+            mostrarNotificacion('Generando PDF...', 'success');
         }
+        
+        // Abrir en nueva ventana para descargar
+        window.open('api/descargar_documento.php?id=' + id, '_blank');
     };
 
     // FUNCIÓN PARA ELIMINAR DOCUMENTO
@@ -356,13 +358,205 @@
         });
     };
 
-    // FUNCIÓN PARA EXPORTAR
-    window.exportarDocumentos = function() {
-        if (typeof mostrarNotificacion === 'function') {
-            mostrarNotificacion('Funcionalidad de exportación en desarrollo', 'error');
-        } else {
-            alert('Funcionalidad de exportación en desarrollo');
+    // FUNCIÓN PARA EDITAR DOCUMENTO
+    window.editarDocumento = function(id) {
+        console.log('Editando documento:', id);
+        
+        // Mostrar loading
+        const content = document.getElementById('detalle-documento-content');
+        content.innerHTML = `
+            <div class="flex items-center justify-center py-12">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        `;
+        
+        // Cerrar modal de detalle si está abierto
+        const modalDetalle = document.getElementById('modal-detalle-documento');
+        if (modalDetalle && !modalDetalle.classList.contains('pointer-events-none')) {
+            toggleModal('modal-detalle-documento');
         }
+        
+        // Hacer petición AJAX para obtener los detalles
+        fetch(`api/obtener_detalle_documento.php?id=${id}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    mostrarFormularioEdicion(data.movimiento, data.detalles, data.trabajadores);
+                } else {
+                    if (typeof mostrarNotificacion === 'function') {
+                        mostrarNotificacion(data.message || 'Error al cargar los datos', 'error');
+                    } else {
+                        alert(data.message || 'Error al cargar los datos');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                if (typeof mostrarNotificacion === 'function') {
+                    mostrarNotificacion('Error de conexión', 'error');
+                } else {
+                    alert('Error de conexión');
+                }
+            });
     };
+
+    function mostrarFormularioEdicion(movimiento, detalles, trabajadores) {
+        // Construir opciones de trabajadores (necesitaremos todos los trabajadores disponibles)
+        // Por ahora usamos solo los actuales
+        let html = `
+            <form id="form-editar-documento" class="space-y-6">
+                <input type="hidden" name="id_movimiento" value="${movimiento.id_movimiento}">
+                <input type="hidden" name="actualizar_movimiento" value="1">
+                
+                <!-- Información del Documento -->
+                <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                    <h4 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">Información del Documento</h4>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Folio (No modificable)</label>
+                            <input type="text" value="${movimiento.folio}" disabled class="w-full rounded-lg border-gray-300 bg-gray-100 dark:bg-gray-700 text-sm">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Tipo (No modificable)</label>
+                            <input type="text" value="${movimiento.tipo_movimiento}" disabled class="w-full rounded-lg border-gray-300 bg-gray-100 dark:bg-gray-700 text-sm">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Fecha</label>
+                            <input type="date" name="fecha" value="${movimiento.fecha.split(' ')[0]}" class="w-full rounded-lg border-gray-300 dark:bg-gray-700 text-sm" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Lugar</label>
+                            <input type="text" name="lugar" value="${movimiento.lugar || ''}" class="w-full rounded-lg border-gray-300 dark:bg-gray-700 text-sm">
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Área</label>
+                            <input type="text" name="area" value="${movimiento.area || ''}" class="w-full rounded-lg border-gray-300 dark:bg-gray-700 text-sm">
+                        </div>
+                        
+                        ${movimiento.dias_prestamo ? `
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Días de Préstamo</label>
+                            <input type="number" name="dias_prestamo" value="${movimiento.dias_prestamo}" min="1" class="w-full rounded-lg border-gray-300 dark:bg-gray-700 text-sm">
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <!-- Responsables (Solo lectura por ahora) -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                    <h4 class="text-sm font-bold text-blue-700 dark:text-blue-300 mb-3 uppercase tracking-wide">Responsables (No modificables)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p class="font-bold text-gray-700 dark:text-gray-300">Recibe:</p>
+                            <p class="text-gray-600 dark:text-gray-400">${trabajadores.recibe.nombre}</p>
+                        </div>
+                        <div>
+                            <p class="font-bold text-gray-700 dark:text-gray-300">Entrega:</p>
+                            <p class="text-gray-600 dark:text-gray-400">${trabajadores.entrega.nombre}</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        <strong>Nota:</strong> Para cambiar responsables, debe crear un nuevo documento.
+                    </p>
+                </div>
+                
+                <!-- Advertencia sobre bienes -->
+                <div class="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 p-4 rounded-r-lg">
+                    <div class="flex items-start gap-2">
+                        <span class="material-symbols-outlined text-yellow-600 dark:text-yellow-400 flex-shrink-0">warning</span>
+                        <div class="text-sm text-yellow-800 dark:text-yellow-200">
+                            <p class="font-bold mb-1">Edición de Bienes No Disponible en Modal</p>
+                            <p>Para modificar los bienes asociados a este documento, debe:</p>
+                            <ol class="list-decimal ml-4 mt-2 space-y-1">
+                                <li>Cancelar esta edición</li>
+                                <li>Ir al módulo "Generador de Documentos"</li>
+                                <li>Crear un nuevo documento con los bienes correctos</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Botones -->
+                <div class="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button type="submit" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition font-semibold flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-sm">save</span>
+                        Guardar Cambios
+                    </button>
+                    <button type="button" onclick="toggleModal('modal-editar-documento')" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-imss-dark dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition font-semibold">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        `;
+        
+        // Mostrar en modal de edición
+        const modalEditar = document.getElementById('modal-editar-documento');
+        if (!modalEditar) {
+            console.error('Modal de edición no encontrado');
+            return;
+        }
+        
+        document.getElementById('editar-documento-content').innerHTML = html;
+        toggleModal('modal-editar-documento');
+        
+        // Agregar event listener al formulario
+        document.getElementById('form-editar-documento').addEventListener('submit', function(e) {
+            e.preventDefault();
+            guardarCambiosDocumento(this);
+        });
+    }
+
+    function guardarCambiosDocumento(form) {
+        const formData = new FormData(form);
+        
+        // Deshabilitar botón
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">refresh</span> Guardando...';
+        
+        fetch('api/actualizar_documento.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                toggleModal('modal-editar-documento');
+                
+                if (typeof mostrarNotificacion === 'function') {
+                    mostrarNotificacion(data.message || 'Documento actualizado correctamente', 'success');
+                }
+                
+                // Recargar página después de 1 segundo
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                if (typeof mostrarNotificacion === 'function') {
+                    mostrarNotificacion(data.message || 'Error al actualizar el documento', 'error');
+                } else {
+                    alert(data.message || 'Error al actualizar el documento');
+                }
+                
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if (typeof mostrarNotificacion === 'function') {
+                mostrarNotificacion('Error de conexión', 'error');
+            } else {
+                alert('Error de conexión');
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        });
+    }
 
 })();

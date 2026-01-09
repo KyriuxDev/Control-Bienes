@@ -65,10 +65,6 @@ require __DIR__ . '/layouts/head.php';
             <p class="text-imss-gray dark:text-gray-400 text-base">Gestione y consulte todos los movimientos registrados en el sistema.</p>
         </div>
         <div class="flex items-center gap-3 w-full lg:w-auto">
-            <button onclick="exportarDocumentos()" class="flex-1 lg:flex-none h-10 px-4 bg-white dark:bg-surface-dark border border-imss-border dark:border-gray-800 text-imss-dark dark:text-white text-sm font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center gap-2 transition-all">
-                <span class="material-symbols-outlined">download</span>
-                Exportar
-            </button>
             <a href="generador_documentos.php" class="flex-1 lg:flex-none h-10 px-5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary-dark flex items-center justify-center gap-2 shadow-sm transition-all hover:shadow-md">
                 <span class="material-symbols-outlined">add</span>
                 Nuevo Documento
@@ -256,6 +252,12 @@ require __DIR__ . '/layouts/head.php';
                                             <span class="material-symbols-outlined text-[20px]">visibility</span>
                                         </button>
                                         <button 
+                                            onclick="editarDocumento(<?php echo $mov->getIdMovimiento(); ?>)"
+                                            class="p-1.5 text-imss-gray hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-colors" 
+                                            title="Editar">
+                                            <span class="material-symbols-outlined text-[20px]">edit</span>
+                                        </button>
+                                        <button 
                                             onclick="descargarDocumento(<?php echo $mov->getIdMovimiento(); ?>)"
                                             class="p-1.5 text-imss-gray hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors" 
                                             title="Descargar PDF">
@@ -307,6 +309,23 @@ require __DIR__ . '/layouts/head.php';
             </button>
         </div>
         <div id="detalle-documento-content" class="p-8"></div>
+    </div>
+</div>
+
+<!-- Modal Editar Documento -->
+<div id="modal-editar-documento" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-[100]">
+    <div class="modal-overlay absolute w-full h-full bg-black opacity-50" onclick="toggleModal('modal-editar-documento')"></div>
+    <div class="bg-white dark:bg-[#1e2a1e] w-11/12 md:max-w-4xl mx-auto rounded-xl shadow-2xl z-50 overflow-hidden max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-imss-border dark:border-gray-800 flex justify-between items-center bg-gradient-to-r from-green-500/5 to-transparent sticky top-0 bg-white dark:bg-[#1e2a1e] z-10">
+            <h3 class="text-xl font-black text-green-600 dark:text-green-400 flex items-center gap-2">
+                <span class="material-symbols-outlined">edit</span> 
+                EDITAR DOCUMENTO
+            </h3>
+            <button onclick="toggleModal('modal-editar-documento')" class="text-gray-400 hover:text-red-500 transition">
+                <span class="material-symbols-outlined text-3xl">close</span>
+            </button>
+        </div>
+        <div id="editar-documento-content" class="p-8"></div>
     </div>
 </div>
 
