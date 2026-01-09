@@ -134,7 +134,7 @@ require __DIR__ . '/public/layouts/head.php';
             </a>
 
             <!-- Action 2: Buscar Documentos -->
-            <a href="#" class="flex flex-col items-center justify-center gap-3 bg-white dark:bg-[#1e2a1e] hover:bg-primary/5 dark:hover:bg-primary/10 border border-imss-border dark:border-gray-800 hover:border-primary/50 rounded-xl p-6 transition-all group text-center h-40">
+            <a href="/imss-control-bienes/public/gestion_documentos.php" class="flex flex-col items-center justify-center gap-3 bg-white dark:bg-[#1e2a1e] hover:bg-primary/5 dark:hover:bg-primary/10 border border-imss-border dark:border-gray-800 hover:border-primary/50 rounded-xl p-6 transition-all group text-center h-40">
                 <div class="bg-gray-100 dark:bg-gray-800 group-hover:bg-white dark:group-hover:bg-primary/20 p-3 rounded-full transition-colors shadow-sm">
                     <span class="material-symbols-outlined text-primary text-3xl">search</span>
                 </div>
@@ -177,7 +177,7 @@ require __DIR__ . '/public/layouts/head.php';
                 <span class="material-symbols-outlined text-primary">history</span>
                 Movimientos Recientes
             </h3>
-            <a href="#" class="text-xs font-semibold text-primary hover:underline">Ver todos</a>
+            <a href="/imss-control-bienes/public/gestion_documentos.php" class="text-xs font-semibold text-primary hover:underline">Ver todos</a>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
