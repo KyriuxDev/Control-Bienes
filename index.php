@@ -161,8 +161,8 @@ require __DIR__ . '/public/layouts/head.php';
                     <span class="material-symbols-outlined text-primary text-3xl">bar_chart</span>
                 </div>
                 <div>
-                    <span class="block text-imss-dark dark:text-white font-bold group-hover:text-primary transition-colors">Carga Masiva</span>
-                    <span class="text-xs text-imss-gray dark:text-gray-400">Importar CSV/Excel</span>
+                    <span class="block text-imss-dark dark:text-white font-bold group-hover:text-primary transition-colors">Reportes</span>
+                    <span class="text-xs text-imss-gray dark:text-gray-400">Información</span>
                 </div>
             </a>
             
