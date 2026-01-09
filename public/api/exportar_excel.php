@@ -1,235 +1,30 @@
 <?php
-// public/api/exportar_excel.php
+// public/api/exportar_excel.php - VERSIÓN CON SimpleXLSXGen
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 session_start();
+
+// Cargar SimpleXLSXGen manualmente (sin composer)
+$simplexlsxPath = __DIR__ . '/../../lib/simplexlsxgen-master/src/SimpleXLSXGen.php';
+
+if (!file_exists($simplexlsxPath)) {
+    die("ERROR: No se encontró SimpleXLSXGen.php en: " . $simplexlsxPath . "<br>Verifique la ruta y que el archivo existe.");
+}
+
+require_once $simplexlsxPath;
+
+// Verificar que la clase se cargó
+if (!class_exists('Shuchkin\SimpleXLSXGen')) {
+    die("ERROR: La clase SimpleXLSXGen no se cargó correctamente.<br>Contenido del archivo: " . (file_exists($simplexlsxPath) ? "Existe" : "No existe"));
+}
+
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use App\Infrastructure\Config\Database;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
-try {
-    $db = Database::getInstance();
-    $pdo = $db->getConnection();
-    
-    // Crear nuevo Spreadsheet
-    $spreadsheet = new Spreadsheet();
-    
-    // ====================
-    // HOJA 1: MOVIMIENTOS
-    // ====================
-    $sheet = $spreadsheet->getActiveSheet();
-    $sheet->setTitle('Movimientos');
-    
-    // Encabezados
-    $headers = ['ID', 'Folio', 'Tipo', 'Fecha', 'Lugar', 'Área', 'Recibe', 'Entrega', 'Total Bienes'];
-    $sheet->fromArray($headers, NULL, 'A1');
-    
-    // Estilo de encabezados
-    $headerStyle = [
-        'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '247528']],
-        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER]
-    ];
-    $sheet->getStyle('A1:I1')->applyFromArray($headerStyle);
-    
-    // Datos
-    $stmt = $pdo->query("
-        SELECT 
-            m.id_movimiento,
-            m.folio,
-            m.tipo_movimiento,
-            m.fecha,
-            m.lugar,
-            m.area,
-            t_recibe.nombre as recibe,
-            t_entrega.nombre as entrega,
-            COUNT(dm.id_bien) as total_bienes
-        FROM movimiento m
-        LEFT JOIN trabajador t_recibe ON m.matricula_recibe = t_recibe.matricula
-        LEFT JOIN trabajador t_entrega ON m.matricula_entrega = t_entrega.matricula
-        LEFT JOIN detalle_movimiento dm ON m.id_movimiento = dm.id_movimiento
-        GROUP BY m.id_movimiento
-        ORDER BY m.fecha DESC
-    ");
-    $movimientos = $stmt->fetchAll(PDO::FETCH_NUM);
-    
-    if (!empty($movimientos)) {
-        $sheet->fromArray($movimientos, NULL, 'A2');
-    }
-    
-    // Ajustar ancho de columnas
-    foreach (range('A', 'I') as $col) {
-        $sheet->getColumnDimension($col)->setAutoSize(true);
-    }
-    
-    // ====================
-    // HOJA 2: BIENES
-    // ====================
-    $sheet2 = $spreadsheet->createSheet();
-    $sheet2->setTitle('Bienes');
-    
-    $headers2 = ['ID', 'Descripción', 'Naturaleza', 'Marca', 'Modelo', 'Serie', 'Veces Usado'];
-    $sheet2->fromArray($headers2, NULL, 'A1');
-    $sheet2->getStyle('A1:G1')->applyFromArray($headerStyle);
-    
-    $stmt = $pdo->query("
-        SELECT 
-            b.id_bien,
-            b.descripcion,
-            b.naturaleza,
-            b.marca,
-            b.modelo,
-            b.serie,
-            COUNT(dm.id_movimiento) as veces_usado
-        FROM bien b
-        LEFT JOIN detalle_movimiento dm ON b.id_bien = dm.id_bien
-        GROUP BY b.id_bien
-        ORDER BY veces_usado DESC
-    ");
-    $bienes = $stmt->fetchAll(PDO::FETCH_NUM);
-    
-    if (!empty($bienes)) {
-        $sheet2->fromArray($bienes, NULL, 'A2');
-    }
-    
-    foreach (range('A', 'G') as $col) {
-        $sheet2->getColumnDimension($col)->setAutoSize(true);
-    }
-    
-    // ====================
-    // HOJA 3: TRABAJADORES
-    // ====================
-    $sheet3 = $spreadsheet->createSheet();
-    $sheet3->setTitle('Trabajadores');
-    
-    $headers3 = ['Matrícula', 'Nombre', 'Cargo', 'Institución', 'Adscripción', 'Teléfono', 'Total Movimientos'];
-    $sheet3->fromArray($headers3, NULL, 'A1');
-    $sheet3->getStyle('A1:G1')->applyFromArray($headerStyle);
-    
-    $stmt = $pdo->query("
-        SELECT 
-            t.matricula,
-            t.nombre,
-            t.cargo,
-            t.institucion,
-            t.adscripcion,
-            t.telefono,
-            COUNT(DISTINCT m.id_movimiento) as total_movimientos
-        FROM trabajador t
-        LEFT JOIN movimiento m ON (t.matricula = m.matricula_recibe OR t.matricula = m.matricula_entrega)
-        GROUP BY t.matricula
-        ORDER BY total_movimientos DESC
-    ");
-    $trabajadores = $stmt->fetchAll(PDO::FETCH_NUM);
-    
-    if (!empty($trabajadores)) {
-        $sheet3->fromArray($trabajadores, NULL, 'A2');
-    }
-    
-    foreach (range('A', 'G') as $col) {
-        $sheet3->getColumnDimension($col)->setAutoSize(true);
-    }
-    
-    // ====================
-    // HOJA 4: ESTADÍSTICAS
-    // ====================
-    $sheet4 = $spreadsheet->createSheet();
-    $sheet4->setTitle('Estadísticas');
-    
-    // Título
-    $sheet4->setCellValue('A1', 'ESTADÍSTICAS GENERALES DEL SISTEMA');
-    $sheet4->mergeCells('A1:B1');
-    $sheet4->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-    $sheet4->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-    
-    $row = 3;
-    
-    // Total de movimientos
-    $totalMovimientos = count($movimientos);
-    $sheet4->setCellValue("A{$row}", 'Total de Movimientos:');
-    $sheet4->setCellValue("B{$row}", $totalMovimientos);
-    $sheet4->getStyle("A{$row}")->getFont()->setBold(true);
-    $row++;
-    
-    // Total de bienes
-    $totalBienes = count($bienes);
-    $sheet4->setCellValue("A{$row}", 'Total de Bienes:');
-    $sheet4->setCellValue("B{$row}", $totalBienes);
-    $sheet4->getStyle("A{$row}")->getFont()->setBold(true);
-    $row++;
-    
-    // Total de trabajadores
-    $totalTrabajadores = count($trabajadores);
-    $sheet4->setCellValue("A{$row}", 'Total de Trabajadores:');
-    $sheet4->setCellValue("B{$row}", $totalTrabajadores);
-    $sheet4->getStyle("A{$row}")->getFont()->setBold(true);
-    $row += 2;
-    
-    // Movimientos por tipo
-    $sheet4->setCellValue("A{$row}", 'MOVIMIENTOS POR TIPO');
-    $sheet4->mergeCells("A{$row}:B{$row}");
-    $sheet4->getStyle("A{$row}")->getFont()->setBold(true);
-    $row++;
-    
-    $stmt = $pdo->query("SELECT tipo_movimiento, COUNT(*) as total FROM movimiento GROUP BY tipo_movimiento");
-    $tipoStats = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    foreach ($tipoStats as $stat) {
-        $sheet4->setCellValue("A{$row}", $stat['tipo_movimiento'] . ':');
-        $sheet4->setCellValue("B{$row}", $stat['total']);
-        $row++;
-    }
-    
-    $row++;
-    
-    // Bienes por naturaleza
-    $sheet4->setCellValue("A{$row}", 'BIENES POR NATURALEZA');
-    $sheet4->mergeCells("A{$row}:B{$row}");
-    $sheet4->getStyle("A{$row}")->getFont()->setBold(true);
-    $row++;
-    
-    $stmt = $pdo->query("SELECT naturaleza, COUNT(*) as total FROM bien GROUP BY naturaleza");
-    $natStats = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    foreach ($natStats as $stat) {
-        $sheet4->setCellValue("A{$row}", $stat['naturaleza'] . ':');
-        $sheet4->setCellValue("B{$row}", $stat['total']);
-        $row++;
-    }
-    
-    $sheet4->getColumnDimension('A')->setWidth(30);
-    $sheet4->getColumnDimension('B')->setWidth(15);
-    
-    // Fecha de generación
-    $row += 2;
-    $sheet4->setCellValue("A{$row}", 'Fecha de Generación:');
-    $sheet4->setCellValue("B{$row}", date('d/m/Y H:i:s'));
-    $sheet4->getStyle("A{$row}")->getFont()->setItalic(true);
-    
-    // Establecer la primera hoja como activa
-    $spreadsheet->setActiveSheetIndex(0);
-    
-    // Generar archivo
-    $writer = new Xlsx($spreadsheet);
-    
-    $filename = 'Reporte_IMSS_' . date('Y-m-d_His') . '.xlsx';
-    
-    // Headers para descarga
-    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    header('Content-Disposition: attachment;filename="' . $filename . '"');
-    header('Cache-Control: max-age=0');
-    
-    $writer->save('php://output');
-    
-} catch (Exception $e) {
-    error_log("ERROR en exportar_excel.php: " . $e->getMessage());
-    
+// Función para mostrar error
+function mostrarError($mensaje) {
     header('Content-Type: text/html; charset=utf-8');
     echo '<!DOCTYPE html>
     <html lang="es">
@@ -248,7 +43,7 @@ try {
                 <h1 class="text-xl font-bold">Error al Exportar</h1>
             </div>
             <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-                <p class="text-red-800 font-medium">' . htmlspecialchars($e->getMessage()) . '</p>
+                <p class="text-red-800 font-medium">' . htmlspecialchars($mensaje) . '</p>
             </div>
             <button onclick="window.close()" class="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 font-semibold">
                 Cerrar
@@ -256,6 +51,247 @@ try {
         </div>
     </body>
     </html>';
+    exit;
+}
+
+try {
+    $db = Database::getInstance();
+    $pdo = $db->getConnection();
+    
+    // ============================================
+    // PREPARAR DATOS
+    // ============================================
+    
+    // 1. MOVIMIENTOS
+    $stmt = $pdo->query("
+        SELECT 
+            m.id_movimiento as 'ID',
+            m.folio as 'Folio',
+            m.tipo_movimiento as 'Tipo',
+            DATE_FORMAT(m.fecha, '%d/%m/%Y') as 'Fecha',
+            m.lugar as 'Lugar',
+            m.area as 'Área',
+            t_recibe.nombre as 'Recibe',
+            t_entrega.nombre as 'Entrega',
+            COUNT(dm.id_bien) as 'Total Bienes'
+        FROM movimiento m
+        LEFT JOIN trabajador t_recibe ON m.matricula_recibe = t_recibe.matricula
+        LEFT JOIN trabajador t_entrega ON m.matricula_entrega = t_entrega.matricula
+        LEFT JOIN detalle_movimiento dm ON m.id_movimiento = dm.id_movimiento
+        GROUP BY m.id_movimiento
+        ORDER BY m.fecha DESC
+    ");
+    $movimientos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // 2. BIENES
+    $stmt = $pdo->query("
+        SELECT 
+            b.id_bien as 'ID',
+            b.descripcion as 'Descripción',
+            b.naturaleza as 'Naturaleza',
+            b.marca as 'Marca',
+            b.modelo as 'Modelo',
+            b.serie as 'Serie',
+            COUNT(dm.id_movimiento) as 'Veces Usado'
+        FROM bien b
+        LEFT JOIN detalle_movimiento dm ON b.id_bien = dm.id_bien
+        GROUP BY b.id_bien
+        ORDER BY COUNT(dm.id_movimiento) DESC
+    ");
+    $bienes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // 3. TRABAJADORES
+    $stmt = $pdo->query("
+        SELECT 
+            t.matricula as 'Matrícula',
+            t.nombre as 'Nombre',
+            t.cargo as 'Cargo',
+            t.institucion as 'Institución',
+            t.adscripcion as 'Adscripción',
+            t.telefono as 'Teléfono',
+            COUNT(DISTINCT m.id_movimiento) as 'Total Movimientos'
+        FROM trabajador t
+        LEFT JOIN movimiento m ON (t.matricula = m.matricula_recibe OR t.matricula = m.matricula_entrega)
+        GROUP BY t.matricula
+        ORDER BY COUNT(DISTINCT m.id_movimiento) DESC
+    ");
+    $trabajadores = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // 4. ESTADÍSTICAS
+    $totalMovimientos = count($movimientos);
+    $totalBienes = count($bienes);
+    $totalTrabajadores = count($trabajadores);
+    
+    // Estadísticas por tipo
+    $stmt = $pdo->query("SELECT tipo_movimiento, COUNT(*) as total FROM movimiento GROUP BY tipo_movimiento");
+    $tipoStats = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Estadísticas por naturaleza
+    $stmt = $pdo->query("SELECT naturaleza, COUNT(*) as total FROM bien GROUP BY naturaleza");
+    $natStats = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Log para debugging
+    error_log("Total movimientos: " . count($movimientos));
+    error_log("Total bienes: " . count($bienes));
+    error_log("Total trabajadores: " . count($trabajadores));
+    
+    // Verificar que hay datos
+    if (count($movimientos) === 0 && count($bienes) === 0 && count($trabajadores) === 0) {
+        throw new Exception("No hay datos en la base de datos para exportar. Agregue movimientos, bienes o trabajadores primero.");
+    }
+    
+    // ============================================
+    // GENERAR EXCEL CON SIMPLEXLSXGEN
+    // ============================================
+    
+    $sheets = [];
+    
+    // --------------------------------------------
+    // HOJA 1: ESTADÍSTICAS GENERALES
+    // --------------------------------------------
+    $estadisticas = [];
+    
+    // Encabezado principal
+    $estadisticas[] = ['ESTADÍSTICAS GENERALES DEL SISTEMA'];
+    $estadisticas[] = ['']; // Fila vacía
+    
+    // Totales
+    $estadisticas[] = ['Descripción', 'Valor'];
+    $estadisticas[] = ['Total de Movimientos', $totalMovimientos];
+    $estadisticas[] = ['Total de Bienes', $totalBienes];
+    $estadisticas[] = ['Total de Trabajadores', $totalTrabajadores];
+    $estadisticas[] = ['']; // Fila vacía
+    
+    // Movimientos por tipo
+    $estadisticas[] = ['MOVIMIENTOS POR TIPO'];
+    $estadisticas[] = ['Tipo', 'Cantidad'];
+    
+    foreach ($tipoStats as $stat) {
+        $estadisticas[] = [$stat['tipo_movimiento'], $stat['total']];
+    }
+    
+    $estadisticas[] = ['']; // Fila vacía
+    
+    // Bienes por naturaleza
+    $estadisticas[] = ['BIENES POR NATURALEZA'];
+    $estadisticas[] = ['Naturaleza', 'Cantidad'];
+    
+    foreach ($natStats as $stat) {
+        $estadisticas[] = [$stat['naturaleza'], $stat['total']];
+    }
+    
+    $estadisticas[] = ['']; // Fila vacía
+    $estadisticas[] = ['Fecha de Generación', date('d/m/Y H:i:s')];
+    
+    $sheets[] = $estadisticas;
+    
+    // --------------------------------------------
+    // HOJA 2: MOVIMIENTOS
+    // --------------------------------------------
+    $movimientosSheet = [];
+    
+    if (!empty($movimientos)) {
+        // Obtener encabezados
+        $headers = array_keys($movimientos[0]);
+        $movimientosSheet[] = $headers;
+        
+        // Agregar datos
+        foreach ($movimientos as $mov) {
+            $movimientosSheet[] = array_values($mov);
+        }
+    } else {
+        $movimientosSheet[] = ['No hay movimientos registrados'];
+    }
+    
+    $sheets[] = $movimientosSheet;
+    
+    // --------------------------------------------
+    // HOJA 3: BIENES
+    // --------------------------------------------
+    $bienesSheet = [];
+    
+    if (!empty($bienes)) {
+        $headers = array_keys($bienes[0]);
+        $bienesSheet[] = $headers;
+        
+        foreach ($bienes as $bien) {
+            $bienesSheet[] = array_values($bien);
+        }
+    } else {
+        $bienesSheet[] = ['No hay bienes registrados'];
+    }
+    
+    $sheets[] = $bienesSheet;
+    
+    // --------------------------------------------
+    // HOJA 4: TRABAJADORES
+    // --------------------------------------------
+    $trabajadoresSheet = [];
+    
+    if (!empty($trabajadores)) {
+        $headers = array_keys($trabajadores[0]);
+        $trabajadoresSheet[] = $headers;
+        
+        foreach ($trabajadores as $t) {
+            $trabajadoresSheet[] = array_values($t);
+        }
+    } else {
+        $trabajadoresSheet[] = ['No hay trabajadores registrados'];
+    }
+    
+    $sheets[] = $trabajadoresSheet;
+    
+    // ============================================
+    // GENERAR Y DESCARGAR ARCHIVO
+    // ============================================
+    
+    $filename = 'Reporte_IMSS_' . date('Y-m-d_His') . '.xlsx';
+    
+    error_log("Generando archivo Excel: " . $filename);
+    error_log("Total de hojas: " . count($sheets));
+    
+    try {
+        // Crear el objeto Excel
+        $xlsx = new Shuchkin\SimpleXLSXGen();
+        
+        // Agregar cada hoja
+        $sheetNames = ['Estadísticas', 'Movimientos', 'Bienes', 'Trabajadores'];
+        
+        foreach ($sheets as $index => $sheetData) {
+            if ($index === 0) {
+                // Primera hoja
+                $xlsx->addSheet($sheetData, $sheetNames[$index]);
+            } else {
+                // Hojas adicionales
+                $xlsx->addSheet($sheetData, $sheetNames[$index]);
+            }
+        }
+        
+        // Limpiar buffer de salida
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        // Headers para descarga
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        header('Cache-Control: max-age=1');
+        header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+        header('Cache-Control: cache, must-revalidate');
+        header('Pragma: public');
+        
+        $xlsx->downloadAs($filename);
+        
+    } catch (Exception $e) {
+        error_log("Error al generar Excel: " . $e->getMessage());
+        throw new Exception("Error al generar el archivo Excel: " . $e->getMessage());
+    }
+    
+} catch (Exception $e) {
+    error_log("ERROR en exportar_excel.php: " . $e->getMessage());
+    mostrarError($e->getMessage());
 }
 
 exit;
