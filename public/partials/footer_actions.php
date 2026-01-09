@@ -1,7 +1,7 @@
 <!-- Sticky Footer Actions -->
 <div class="fixed bottom-0 left-0 w-full bg-white dark:bg-[#1e2a1e] border-t border-imss-border dark:border-gray-700 shadow-lg z-50">
     <div class="max-w-[1200px] mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
-        <a href="index.php" 
+        <a href="/imss-control-bienes/index.php" 
             class="inline-flex items-center px-4 py-2 text-sm font-medium text-imss-dark bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700">
                 Cancelar
         </a>

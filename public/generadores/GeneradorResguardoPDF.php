@@ -46,7 +46,7 @@ class GeneradorResguardoPDF {
         
         $this->llenarDatos($trabajador, $bienes, $datosAdicionales);
 
-        if (count($bienes) > 2) {
+        if (count($bienes) >= 2) {
             $this->generarAnexo($trabajador, $bienes, $datosAdicionales);
         }
 
