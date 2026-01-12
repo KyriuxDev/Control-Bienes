@@ -349,6 +349,42 @@ try {
     $sheets[] = $devolucionesSheet;
     
     // ============================================
+    //  Detalle movimiento 
+    // ============================================
+
+    $stmt = $pdo->query("
+        SELECT 
+            m.id_movimiento as 'ID Movimiento',
+            m.folio as 'Folio',
+            m.tipo_movimiento as 'Tipo Movimiento',
+            GROUP_CONCAT(
+                CONCAT('- ', b.marca, ' ', b.modelo, ' [Estado: ', dm.estado_fisico, ']') 
+                SEPARATOR '\n'
+            ) AS 'Lista de Bienes'
+        FROM movimiento m
+        JOIN detalle_movimiento dm ON m.id_movimiento = dm.id_movimiento
+        JOIN bien b ON dm.id_bien = b.id_bien
+        GROUP BY m.id_movimiento
+        ORDER BY m.id_movimiento ASC;
+    ");
+    $detalleMovimiento = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $detalleMovimientoSheet = [];
+    
+    if (!empty($detalleMovimiento)) {
+        $headers = array_keys($detalleMovimiento[0]);
+        $detalleMovimientoSheet[] = $headers;
+        
+        foreach ($detalleMovimiento as $dev) {
+            $detalleMovimientoSheet[] = array_values($dev);
+        }
+    } else {
+        $detalleMovimientoSheet[] = ['No hay devoluciones pendientes'];
+    }
+    
+    $sheets[] = $detalleMovimientoSheet;
+
+    // ============================================
     // GENERAR Y DESCARGAR ARCHIVO
     // ============================================
     
@@ -368,7 +404,8 @@ try {
             'Bienes', 
             'Trabajadores',
             'Préstamos Activos',
-            'Devoluciones Pendientes'
+            'Devoluciones Pendientes',
+            'Detalle Movimiento'
         ];
         
         foreach ($sheets as $index => $sheetData) {
