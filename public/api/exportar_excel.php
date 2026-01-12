@@ -181,7 +181,7 @@ try {
     }
     
     $estadisticas[] = ['']; // Fila vacía
-    $estadisticas[] = ['Fecha de Generación', date('d/m/Y H:i:s')];
+    $estadisticas[] = ['Fecha de Generación', date('d/m/Y')];
     
     $sheets[] = $estadisticas;
     

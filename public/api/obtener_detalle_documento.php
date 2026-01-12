@@ -79,7 +79,8 @@ try {
             'fecha' => $movimiento->getFecha(),
             'lugar' => $movimiento->getLugar(),
             'area' => $movimiento->getArea(),
-            'dias_prestamo' => $movimiento->getDiasPrestamo()
+            'dias_prestamo' => $movimiento->getDiasPrestamo(),
+            'fecha_devolucion' => $movimiento->getFechaDevolucion() // NUEVO
         ),
         'trabajadores' => array(
             'recibe' => array(

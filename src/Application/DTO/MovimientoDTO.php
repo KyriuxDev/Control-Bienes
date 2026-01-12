@@ -13,6 +13,7 @@ class MovimientoDTO
     public $area;
     public $folio;
     public $dias_prestamo;
+    public $fecha_devolucion;
 
     public function __construct(array $data = array())
     {
@@ -25,6 +26,7 @@ class MovimientoDTO
         $this->area = isset($data['area']) ? $data['area'] : null;
         $this->folio = isset($data['folio']) ? $data['folio'] : null;
         $this->dias_prestamo = isset($data['dias_prestamo']) ? $data['dias_prestamo'] : null;
+        $this->fecha_devolucion = isset($data['fecha_devolucion']) ? $data['fecha_devolucion'] : null;
     }
 
     public function toArray()
@@ -38,7 +40,8 @@ class MovimientoDTO
             'lugar' => $this->lugar,
             'area' => $this->area,
             'folio' => $this->folio,
-            'dias_prestamo' => $this->dias_prestamo
+            'dias_prestamo' => $this->dias_prestamo,
+            'fecha_devolucion' => $this->fecha_devolucion
         );
     }
 }

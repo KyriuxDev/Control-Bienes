@@ -187,7 +187,9 @@ try {
         'sujeto_devolucion_global' => $sujetoDevolucionGlobal,
         'dias_prestamo' => isset($_POST['dias_prestamo']) ? intval($_POST['dias_prestamo']) : null,
         'fecha_devolucion_prestamo' => isset($_POST['fecha_devolucion_prestamo']) ? $_POST['fecha_devolucion_prestamo'] : null,
-        'fecha_devolucion_constancia' => isset($_POST['fecha_devolucion_constancia']) ? $_POST['fecha_devolucion_constancia'] : null
+        'fecha_devolucion_constancia' => isset($_POST['fecha_devolucion_constancia']) ? $_POST['fecha_devolucion_constancia'] : null,
+        // NUEVO: También pasar como fecha_devolucion para compatibilidad
+        'fecha_devolucion' => isset($_POST['fecha_devolucion_constancia']) ? $_POST['fecha_devolucion_constancia'] : null
     );
 
     // 6. Generar PDFs temporales

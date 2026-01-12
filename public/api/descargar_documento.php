@@ -134,6 +134,86 @@ try {
     
     error_log("Bienes preparados: " . count($bienesSeleccionados));
     
+KyriuxDev/Control-Bienes
+
+main
+
+GITHUB
+
+me falto tomar un campo, que es día devolución, que es para la constancia de salida, tengo qu modificar mi base de datos y tambien mis archivos de mi código, ahorita lo maneja pero no lo inserta solo lo toma, pero ese dato es solamente para constancia salida
+9:20 a.m.
+
+Entiendo perfectamente. Necesitas agregar el campo fecha_devolucion a la tabla movimiento para almacenar la fecha de devolución específica de las Constancias de Salida. Actualmente lo estás usando solo en tiempo de generación del PDF pero no se persiste en la base de datos.
+
+Te ayudaré a realizar todos los cambios necesarios:
+1. Modificación de la Base de Datos
+Migración: Agregar campo fecha_devolucion
+Código 
+2. Actualizar Entity Movimiento
+Movimiento.php - Con fecha_devolucion
+Código 
+3. Actualizar DTO MovimientoDTO
+MovimientoDTO.php - Con fecha_devolucion
+Código 
+4. Actualizar Repository MySQLMovimientoRepository
+MySQLMovimientoRepository.php - Con fecha_devolucion
+Código 
+5. Actualizar procesar_pdf.php para guardar fecha_devolucion
+procesar_pdf.php - Fragmento con fecha_devolucion
+Código 
+6. Actualizar GeneradorSalidaPDF para usar la BD
+GeneradorSalidaPDF.php - Fragmento fecha_devolucion desde BD
+Código 
+7. Actualizar api/descargar_documento.php
+descargar_documento.php - Fragmento con fecha_devolucion
+Código 
+8. Actualizar vista_previa_pdf.php
+vista_previa_pdf.php - Fragmento con fecha_devolucion
+Código 
+9. Actualizar obtener_detalle_documento.php para incluir la fecha
+obtener_detalle_documento.php - Con fecha_devolucion
+Código 
+Resumen de los Cambios
+
+He creado todos los archivos necesarios para agregar el campo fecha_devolucion a tu sistema:
+✅ Base de Datos
+
+    Migración SQL - Script para agregar la columna a la tabla movimiento
+
+✅ Backend (PHP)
+
+    Entity Movimiento - Agregado getter/setter para fecha_devolucion
+    DTO MovimientoDTO - Incluido el nuevo campo
+    Repository MySQLMovimientoRepository - INSERT y UPDATE con el nuevo campo
+    procesar_pdf.php - Guarda fecha_devolucion solo para Constancia de Salida
+    GeneradorSalidaPDF.php - Usa la fecha desde BD (con fallback para vista previa)
+    descargar_documento.php - Obtiene fecha_devolucion de la BD
+    vista_previa_pdf.php - Maneja la fecha para vista previa
+    obtener_detalle_documento.php - Retorna la fecha en el JSON
+
+📋 Pasos para Implementar
+
+    Ejecuta la migración SQL en phpMyAdmin o tu cliente MySQL
+    Reemplaza los archivos con las versiones actualizadas
+    Verifica que el campo se agregó correctamente: DESCRIBE movimiento;
+
+🎯 Comportamiento
+
+    Constancia de Salida con "Sujeto a Devolución = SÍ" → guardará fecha_devolucion
+    Otros tipos → fecha_devolucion será NULL
+    Vista previa → funciona con la fecha del formulario
+    Descarga → usa la fecha de la base de datos
+
+¿Necesitas que haga algún ajuste adicional o quieres que genere algún otro archivo relacionado?
+Se ha quedado sin mensajes gratuitos hasta las 14:00
+Actualizar
+
+
+Claude es IA y puede cometer errores. Por favor, verifica las respuestas.
+<?php
+// public/api/descargar_documento.php - FRAGMENTO MODIFICADO
+// Buscar donde se preparan los datosAdicionales (línea ~95 aproximadamente)
+
     // Preparar datos adicionales
     $datosAdicionales = array(
         'folio' => $movimiento->getFolio(),
@@ -151,9 +231,13 @@ try {
         'estado_general' => $estadoGeneral,
         'sujeto_devolucion_global' => $sujetoDevolucionGlobal,
         'dias_prestamo' => $movimiento->getDiasPrestamo(),
-        'fecha_devolucion_prestamo' => null, // No se almacena en BD
-        'fecha_devolucion_constancia' => null // No se almacena en BD
+        'fecha_devolucion_prestamo' => null, // No se almacena en BD (se calcula)
+        'fecha_devolucion' => $movimiento->getFechaDevolucion(), // NUEVO: desde BD
+        // Mantener compatibilidad
+        'fecha_devolucion_constancia' => $movimiento->getFechaDevolucion() // NUEVO: alias
     );
+    
+    error_log("Fecha devolución desde BD: " . ($movimiento->getFechaDevolucion() ?: 'NULL'));
     
     // Crear directorio temporal si no existe
     $directorioBase = __DIR__ . '/../pdfs';

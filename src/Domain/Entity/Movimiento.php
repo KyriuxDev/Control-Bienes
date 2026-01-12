@@ -13,6 +13,7 @@ class Movimiento{
     public $area;
     public $folio;
     public $dias_prestamo;
+    public $fecha_devolucion;
 
     public function getIdMovimiento(){
         return $this->id_movimiento;
@@ -92,6 +93,15 @@ class Movimiento{
 
     public function setDiasPrestamo($dias_prestamo){
         $this->dias_prestamo = $dias_prestamo;
+        return $this;
+    }
+
+    public function getFechaDevolucion(){
+        return $this->fecha_devolucion;
+    }
+
+    public function setFechaDevolucion($fecha_devolucion){
+        $this->fecha_devolucion = $fecha_devolucion;
         return $this;
     }
 }

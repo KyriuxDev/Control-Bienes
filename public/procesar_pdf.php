@@ -213,6 +213,14 @@ try {
                    ->setFolio($folio)
                    ->setDiasPrestamo(isset($_POST['dias_prestamo']) ? $_POST['dias_prestamo'] : null);
         
+        if ($tipoMovimiento === 'Constancia de salida' && 
+        $sujetoDevolucionGlobal == 1 && 
+        isset($_POST['fecha_devolucion_constancia']) && 
+        !empty($_POST['fecha_devolucion_constancia'])) {
+            $movimiento->setFechaDevolucion($_POST['fecha_devolucion_constancia']);
+            error_log("Fecha de devolución establecida: " . $_POST['fecha_devolucion_constancia']);
+        }
+        
         $movimientoRepo->persist($movimiento);
         $idMovimiento = $movimiento->getIdMovimiento();
         error_log("Movimiento creado con ID: $idMovimiento");

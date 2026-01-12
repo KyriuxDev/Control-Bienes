@@ -172,13 +172,25 @@ class GeneradorSalidaPDF {
             $this->pdf->SetXY(77, 144);
             $this->pdf->Write(15, 'X');
             
-            // FECHA DE DEVOLUCIÓN FORMATEADA - USAR CAMPO ESPECÍFICO DE CONSTANCIA
-            if (isset($datosAdicionales['fecha_devolucion_constancia']) && !empty($datosAdicionales['fecha_devolucion_constancia'])) {
+            // FECHA DE DEVOLUCIÓN FORMATEADA
+            // NUEVO: Primero intentar obtener desde el movimiento guardado
+            if (isset($datosAdicionales['fecha_devolucion']) && !empty($datosAdicionales['fecha_devolucion'])) {
+                // Usar la fecha almacenada en la BD
+                $fechaDevolucionFormateada = $this->generarTextoFechaCorta($datosAdicionales['fecha_devolucion']);
+                $this->pdf->SetFont('helvetica', '', 7);
+                $this->pdf->SetXY(111, 149);
+                $this->pdf->Write(5, $fechaDevolucionFormateada);
+                $this->pdf->SetFont('helvetica', '', 9);
+                error_log("Fecha devolución desde BD: " . $datosAdicionales['fecha_devolucion']);
+            } 
+            // Fallback: usar fecha_devolucion_constancia si existe (para vista previa)
+            elseif (isset($datosAdicionales['fecha_devolucion_constancia']) && !empty($datosAdicionales['fecha_devolucion_constancia'])) {
                 $fechaDevolucionFormateada = $this->generarTextoFechaCorta($datosAdicionales['fecha_devolucion_constancia']);
                 $this->pdf->SetFont('helvetica', '', 7);
                 $this->pdf->SetXY(111, 149);
                 $this->pdf->Write(5, $fechaDevolucionFormateada);
                 $this->pdf->SetFont('helvetica', '', 9);
+                error_log("Fecha devolución desde formulario: " . $datosAdicionales['fecha_devolucion_constancia']);
             }
         } else {
             // Marcar NO

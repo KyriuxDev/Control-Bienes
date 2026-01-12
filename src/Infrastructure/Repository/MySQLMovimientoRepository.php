@@ -28,8 +28,8 @@ class MySQLMovimientoRepository implements MovimientoRepositoryInterface
 
     protected function guardar($entity)
     {
-        $sql = "INSERT INTO {$this->table} (tipo_movimiento, matricula_recibe, matricula_entrega, fecha, lugar, area, folio, dias_prestamo) 
-                VALUES (:tipo_movimiento, :matricula_recibe, :matricula_entrega, :fecha, :lugar, :area, :folio, :dias_prestamo)";
+        $sql = "INSERT INTO {$this->table} (tipo_movimiento, matricula_recibe, matricula_entrega, fecha, lugar, area, folio, dias_prestamo, fecha_devolucion) 
+                VALUES (:tipo_movimiento, :matricula_recibe, :matricula_entrega, :fecha, :lugar, :area, :folio, :dias_prestamo, :fecha_devolucion)";
         
         $stmt = $this->pdo->prepare($sql);
         $result = $stmt->execute([
@@ -40,7 +40,8 @@ class MySQLMovimientoRepository implements MovimientoRepositoryInterface
             'lugar' => $entity->getLugar(),
             'area' => $entity->getArea(),
             'folio' => $entity->getFolio(),
-            'dias_prestamo' => $entity->getDiasPrestamo()
+            'dias_prestamo' => $entity->getDiasPrestamo(),
+            'fecha_devolucion' => $entity->getFechaDevolucion() // NUEVO
         ]);
         
         if ($result) {
@@ -60,7 +61,8 @@ class MySQLMovimientoRepository implements MovimientoRepositoryInterface
                     lugar = :lugar, 
                     area = :area, 
                     folio = :folio,
-                    dias_prestamo = :dias_prestamo
+                    dias_prestamo = :dias_prestamo,
+                    fecha_devolucion = :fecha_devolucion
                 WHERE id_movimiento = :id_movimiento";
         
         $stmt = $this->pdo->prepare($sql);
@@ -73,7 +75,8 @@ class MySQLMovimientoRepository implements MovimientoRepositoryInterface
             'lugar' => $entity->getLugar(),
             'area' => $entity->getArea(),
             'folio' => $entity->getFolio(),
-            'dias_prestamo' => $entity->getDiasPrestamo()
+            'dias_prestamo' => $entity->getDiasPrestamo(),
+            'fecha_devolucion' => $entity->getFechaDevolucion() // NUEVO
         ]);
     }
 
