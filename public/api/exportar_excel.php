@@ -130,10 +130,30 @@ try {
     $stmt = $pdo->query("SELECT naturaleza, COUNT(*) as total FROM bien GROUP BY naturaleza");
     $natStats = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
+    // Estadísticas de préstamos activos (solo Prestamo, sin Constancia de salida)
+    $stmt = $pdo->query("
+        SELECT COUNT(*) as total 
+        FROM movimiento 
+        WHERE tipo_movimiento = 'Prestamo'
+        AND dias_prestamo > 0
+    ");
+    $prestamosActivos = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    
+    // Estadísticas de devoluciones pendientes (Constancia de salida con fecha futura)
+    $stmt = $pdo->query("
+        SELECT COUNT(*) as total 
+        FROM movimiento 
+        WHERE fecha_devolucion IS NOT NULL 
+        AND fecha_devolucion >= CURDATE()
+    ");
+    $devolucionesPendientes = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    
     // Log para debugging
     error_log("Total movimientos: " . count($movimientos));
     error_log("Total bienes: " . count($bienes));
     error_log("Total trabajadores: " . count($trabajadores));
+    error_log("Préstamos activos: " . $prestamosActivos);
+    error_log("Devoluciones pendientes: " . $devolucionesPendientes);
     
     // Verificar que hay datos
     if (count($movimientos) === 0 && count($bienes) === 0 && count($trabajadores) === 0) {
@@ -160,6 +180,13 @@ try {
     $estadisticas[] = ['Total de Movimientos', $totalMovimientos];
     $estadisticas[] = ['Total de Bienes', $totalBienes];
     $estadisticas[] = ['Total de Trabajadores', $totalTrabajadores];
+    $estadisticas[] = ['']; // Fila vacía
+    
+    // Estadísticas de préstamos y devoluciones
+    $estadisticas[] = ['ESTADO DE PRÉSTAMOS Y DEVOLUCIONES'];
+    $estadisticas[] = ['Estado', 'Cantidad'];
+    $estadisticas[] = ['Préstamos Activos', $prestamosActivos];
+    $estadisticas[] = ['Devoluciones Pendientes', $devolucionesPendientes];
     $estadisticas[] = ['']; // Fila vacía
     
     // Movimientos por tipo
@@ -241,6 +268,86 @@ try {
     
     $sheets[] = $trabajadoresSheet;
     
+    // --------------------------------------------
+    // HOJA 5: PRÉSTAMOS ACTIVOS (SIN fecha_devolucion)
+    // --------------------------------------------
+    $stmt = $pdo->query("
+        SELECT 
+            m.folio as 'Folio',
+            m.tipo_movimiento as 'Tipo',
+            DATE_FORMAT(m.fecha, '%d/%m/%Y') as 'Fecha Préstamo',
+            m.dias_prestamo as 'Días de Préstamo',
+            t_recibe.nombre as 'Responsable',
+            t_recibe.cargo as 'Cargo',
+            t_recibe.telefono as 'Teléfono',
+            m.area as 'Área',
+            m.lugar as 'Lugar',
+            COUNT(dm.id_bien) as 'Total Bienes'
+        FROM movimiento m
+        LEFT JOIN trabajador t_recibe ON m.matricula_recibe = t_recibe.matricula
+        LEFT JOIN detalle_movimiento dm ON m.id_movimiento = dm.id_movimiento
+        WHERE m.tipo_movimiento = 'Prestamo'
+        AND m.dias_prestamo > 0
+        GROUP BY m.id_movimiento
+        ORDER BY m.fecha DESC
+    ");
+    $prestamosAct = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $prestamosSheet = [];
+    
+    if (!empty($prestamosAct)) {
+        $headers = array_keys($prestamosAct[0]);
+        $prestamosSheet[] = $headers;
+        
+        foreach ($prestamosAct as $pres) {
+            $prestamosSheet[] = array_values($pres);
+        }
+    } else {
+        $prestamosSheet[] = ['No hay préstamos activos'];
+    }
+    
+    $sheets[] = $prestamosSheet;
+    
+    // --------------------------------------------
+    // HOJA 6: DEVOLUCIONES PENDIENTES
+    // --------------------------------------------
+    $stmt = $pdo->query("
+        SELECT 
+            m.folio as 'Folio',
+            m.tipo_movimiento as 'Tipo',
+            DATE_FORMAT(m.fecha, '%d/%m/%Y') as 'Fecha Movimiento',
+            DATE_FORMAT(m.fecha_devolucion, '%d/%m/%Y') as 'Fecha Devolución',
+            DATEDIFF(m.fecha_devolucion, CURDATE()) as 'Días Restantes',
+            t_recibe.nombre as 'Responsable',
+            t_recibe.cargo as 'Cargo',
+            t_recibe.telefono as 'Teléfono',
+            m.area as 'Área',
+            COUNT(dm.id_bien) as 'Total Bienes'
+        FROM movimiento m
+        LEFT JOIN trabajador t_recibe ON m.matricula_recibe = t_recibe.matricula
+        LEFT JOIN detalle_movimiento dm ON m.id_movimiento = dm.id_movimiento
+        WHERE m.fecha_devolucion IS NOT NULL 
+        AND m.fecha_devolucion >= CURDATE()
+        GROUP BY m.id_movimiento
+        ORDER BY m.fecha_devolucion ASC
+    ");
+    $devolucionesPend = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $devolucionesSheet = [];
+    
+    if (!empty($devolucionesPend)) {
+        $headers = array_keys($devolucionesPend[0]);
+        $devolucionesSheet[] = $headers;
+        
+        foreach ($devolucionesPend as $dev) {
+            $devolucionesSheet[] = array_values($dev);
+        }
+    } else {
+        $devolucionesSheet[] = ['No hay devoluciones pendientes'];
+    }
+    
+    $sheets[] = $devolucionesSheet;
+    
     // ============================================
     // GENERAR Y DESCARGAR ARCHIVO
     // ============================================
@@ -255,7 +362,14 @@ try {
         $xlsx = new Shuchkin\SimpleXLSXGen();
         
         // Agregar cada hoja
-        $sheetNames = ['Estadísticas', 'Movimientos', 'Bienes', 'Trabajadores'];
+        $sheetNames = [
+            'Estadísticas', 
+            'Movimientos', 
+            'Bienes', 
+            'Trabajadores',
+            'Préstamos Activos',
+            'Devoluciones Pendientes'
+        ];
         
         foreach ($sheets as $index => $sheetData) {
             if ($index === 0) {
