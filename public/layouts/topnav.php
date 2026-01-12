@@ -4,8 +4,12 @@
         <div class="flex items-center justify-between h-16">
             <!-- Logo & Title -->
             <div class="flex items-center gap-4">
-                <div class="flex items-center justify-center size-10 rounded-md bg-primary/10 text-primary">
-                    <span class="material-symbols-outlined text-3xl">health_and_safety</span>
+                <div class="flex items-center justify-center size-10 rounded-md bg-white dark:bg-[#1e2a1e] overflow-hidden">
+                    <img
+                        src="/imss-control-bienes/public/assets/images/IMSS.png"
+                        alt="IMSS"
+                        class="w-full h-full object-contain"
+                    />
                 </div>
                 <div class="flex flex-col">
                     <h1 class="text-lg font-bold leading-tight tracking-tight text-imss-dark dark:text-white">IMSS Control de Bienes</h1>
